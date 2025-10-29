@@ -1,0 +1,27 @@
+---
+sidebar: sidebar 
+permalink: trident-use/vol-operations.html 
+keywords: snapshots, volumes, csi topology, storage classes, pv, pvc, persistent volumes, persistent volume claims, backends, expand volumes, import volumes 
+summary: Trident提供了多种卷管理​​功能。了解Trident在大批量处理方面所能提供的功能。 
+---
+= 执行批量操作
+:hardbreaks:
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+了解Trident提供的卷管理功能。
+
+
+
+== 管理容量
+
+请参考以下内容，了解如何使用Trident管理您的卷。
+
+* link:csi-topology.html["使用 CSI 拓扑"^]
+* link:vol-snapshots.html["使用快照"^]
+* link:vol-expansion.html["扩大规模"^]
+* link:vol-import.html["进口量"^]
+

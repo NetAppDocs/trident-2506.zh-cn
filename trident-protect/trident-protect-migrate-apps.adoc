@@ -1,0 +1,196 @@
+---
+sidebar: sidebar 
+permalink: trident-protect/trident-protect-migrate-apps.html 
+keywords: trident, protect, migrate, storage, restore, backup 
+summary: 您可以将备份或快照数据还原到不同的集群或存储类。 
+---
+= 使用Trident Protect 迁移应用程序
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ../media/
+
+
+[role="lead"]
+您可以通过恢复备份数据在集群之间或不同的存储类之间迁移您的应用程序。
+
+
+NOTE: 迁移应用程序时，为该应用程序配置的所有执行钩子都会随应用程序一起迁移。如果存在恢复后执行钩子，它将作为恢复操作的一部分自动运行。
+
+
+
+== 备份和恢复操作
+
+针对以下场景，您可以自动执行特定的备份和恢复任务，以执行备份和恢复操作。
+
+
+
+=== 克隆到同一集群
+
+要将应用程序克隆到同一集群，请创建快照或备份，然后将数据还原到同一集群。
+
+.步骤
+. 执行以下操作之一：
++
+.. link:trident-protect-protect-apps.html#create-an-on-demand-snapshot["创建快照"]。
+.. link:trident-protect-protect-apps.html#create-an-on-demand-backup["创建备份"]。
+
+
+. 在同一集群上，根据您创建的是快照还是备份，执行以下操作之一：
++
+.. link:trident-protect-restore-apps.html#restore-from-a-snapshot-to-a-different-namespace["从快照恢复数据"]。
+.. link:trident-protect-restore-apps.html#restore-from-a-backup-to-a-different-namespace["从备份中恢复数据"]。
+
+
+
+
+
+
+=== 克隆到不同的集群
+
+要将应用程序克隆到不同的集群（执行跨集群克隆），请在源集群上创建备份，然后将备份还原到不同的集群。确保目标集群上安装了Trident保护。
+
+
+NOTE: 您可以使用以下方法在不同的集群之间复制应用程序link:trident-protect-use-snapmirror-replication.html["SnapMirror 复制"]。
+
+.步骤
+. link:trident-protect-protect-apps.html#create-an-on-demand-backup["创建备份"]。
+. 确保目标集群上已配置包含备份的对象存储桶的 AppVault CR。
+. 在目标集群上，link:trident-protect-restore-apps.html#restore-from-a-backup-to-a-different-namespace["从备份中恢复数据"] 。
+
+
+
+
+== 将应用程序从一个存储类迁移到另一个存储类
+
+您可以通过将备份还原到目标存储类，将应用程序从一个存储类迁移到另一个存储类。
+
+例如（不包括恢复 CR 中的密钥）：
+
+[source, yaml]
+----
+apiVersion: protect.trident.netapp.io/v1
+kind: SnapshotRestore
+metadata:
+  name: "${snapshotRestoreCRName}"
+spec:
+  appArchivePath: "${snapshotArchivePath}"
+  appVaultRef: "${appVaultCRName}"
+  namespaceMapping:
+    - destination: "${destinationNamespace}"
+      source: "${sourceNamespace}"
+  storageClassMapping:
+    - destination: "${destinationStorageClass}"
+      source: "${sourceStorageClass}"
+  resourceFilter:
+    resourceMatchers:
+      kind: Secret
+      version: v1
+    resourceSelectionCriteria: exclude
+----
+[role="tabbed-block"]
+====
+.使用 CR 恢复快照
+--
+.步骤
+. 创建自定义资源 (CR) 文件并将其命名为 `trident-protect-snapshot-restore-cr.yaml`。
+. 在您创建的文件中，配置以下属性：
++
+** *metadata.name*: (_必填_) 此自定义资源的名称；请为您的环境选择一个唯一且有意义的名称。
+** *spec.appArchivePath*: AppVault 内存储快照内容的路径。您可以使用以下命令查找此路径：
++
+[source, console]
+----
+kubectl get snapshots <my-snapshot-name> -n trident-protect -o jsonpath='{.status.appArchivePath}'
+----
+** *spec.appVaultRef*: (_必需_) 存储快照内容的 AppVault 的名称。
+** *spec.namespaceMapping*：恢复操作的源命名空间到目标命名空间的映射。代替 `my-source-namespace`和 `my-destination-namespace`利用来自周围环境的信息。
++
+[source, yaml]
+----
+---
+apiVersion: protect.trident.netapp.io/v1
+kind: SnapshotRestore
+metadata:
+  name: my-cr-name
+  namespace: trident-protect
+spec:
+  appArchivePath: my-snapshot-path
+  appVaultRef: appvault-name
+  namespaceMapping: [{"source": "my-source-namespace", "destination": "my-destination-namespace"}]
+----
+
+
+. 如果您需要仅选择要恢复的应用程序的某些资源，则可以添加筛选条件，以包含或排除带有特定标签的资源：
++
+** *resourceFilter.resourceSelectionCriteria*：（筛选时必需）使用 `include or exclude`包含或排除 resourceMatchers 中定义的资源。添加以下 resourceMatchers 参数以定义要包含或排除的资源：
++
+*** *resourceFilter.resourceMatchers*：resourceMatcher 对象数组。如果在该数组中定义多个元素，则它们之间按 OR 运算匹配，每个元素内的字段（组、种类、版本）之间按 AND 运算匹配。
++
+**** *resourceMatchers[].group*: (_可选_) 要筛选的资源组。
+**** *resourceMatchers[].kind*: (_可选_) 要筛选的资源类型。
+**** *resourceMatchers[].version*: (_可选_) 要筛选的资源版本。
+**** *resourceMatchers[].names*: (_可选_) 要过滤的资源的 Kubernetes 元数据.name 字段中的名称。
+**** *resourceMatchers[].namespaces*: (_可选_) 要过滤的资源的 Kubernetes 元数据.name 字段中的命名空间。
+**** *resourceMatchers[].labelSelectors*: (_可选_) 资源的 Kubernetes 元数据.name 字段中的标签选择器字符串，如在以下位置定义： https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#label-selectors["Kubernetes 文档"^] 。例如： `"trident.netapp.io/os=linux"` 。
++
+例如：
+
++
+[source, yaml]
+----
+spec:
+  resourceFilter:
+    resourceSelectionCriteria: "include"
+    resourceMatchers:
+      - group: my-resource-group-1
+        kind: my-resource-kind-1
+        version: my-resource-version-1
+        names: ["my-resource-names"]
+        namespaces: ["my-resource-namespaces"]
+        labelSelectors: ["trident.netapp.io/os=linux"]
+      - group: my-resource-group-2
+        kind: my-resource-kind-2
+        version: my-resource-version-2
+        names: ["my-resource-names"]
+        namespaces: ["my-resource-namespaces"]
+        labelSelectors: ["trident.netapp.io/os=linux"]
+----
+
+
+
+
+
+
+. 填写完之后 `trident-protect-snapshot-restore-cr.yaml`将文件的值正确后，应用 CR：
++
+[source, console]
+----
+kubectl apply -f trident-protect-snapshot-restore-cr.yaml
+----
+
+
+--
+.使用 CLI 恢复快照
+--
+.步骤
+. 将快照还原到不同的命名空间，并将括号中的值替换为您环境中的信息。
++
+** 这 `snapshot`参数使用命名空间和快照名称，格式如下 `<namespace>/<name>`。
+** 这 `namespace-mapping`该参数使用冒号分隔的命名空间，将源命名空间映射到正确的目标命名空间，格式如下： `source1:dest1,source2:dest2` 。
++
+例如：
+
++
+[source, console]
+----
+tridentctl-protect create snapshotrestore <my_restore_name> --snapshot <namespace/snapshot_to_restore> --namespace-mapping <source_to_destination_namespace_mapping>
+----
+
+
+
+
+--
+====

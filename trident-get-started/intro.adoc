@@ -1,0 +1,81 @@
+---
+sidebar: sidebar 
+permalink: trident-get-started/intro.html 
+keywords: product overview, Trident, fsx, element, google cloud, cvs, architecture, node pod, controller pod, pods, csi, sidecar 
+summary: 'Trident是由NetApp维护的完全受支持的开源项目。它旨在帮助您使用行业标准接口（例如容器存储接口 (CSI)）来满足容器化应用程序的持久性需求。' 
+---
+= 了解Trident
+:hardbreaks:
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Trident是由NetApp维护的完全支持的开源项目。它旨在帮助您使用行业标准接口（例如容器存储接口 (CSI)）来满足容器化应用程序的持久性需求。
+
+
+
+== 什么是Trident？
+
+NetApp Trident支持在所有流行的NetApp存储平台（包括公有云和本地）上使用和管理存储资源，例如本地ONTAP集群（AFF、 FAS和ASA）、 ONTAP Select、 Cloud Volumes ONTAP、Element 软件（NetApp HCI、 SolidFire）、 Azure NetApp Files、 Amazon FSx for NetApp ONTAP和 Google Cloud 上的Cloud Volumes Service 。
+
+Trident是一个符合容器存储接口 (CSI) 标准的动态存储编排器，可与以下系统原生集成：link:https://kubernetes.io/["Kubernetes"^] 。 Trident以单个 Controller Pod 和集群中每个工作节点上的 Node Pod 的形式运行。参考 link:../trident-get-started/architecture.html["Trident架构"] 了解详情。
+
+Trident还为NetApp存储平台提供与 Docker 生态系统的直接集成。 NetApp Docker Volume Plugin (nDVP) 支持从存储平台到 Docker 主机的存储资源配置和管理。参考 link:../trident-docker/deploy-docker.html["部署适用于 Docker 的Trident"] 了解详情。
+
+
+NOTE: 如果您是第一次使用 Kubernetes，您应该先熟悉一下它。link:https://kubernetes.io/docs/home/["Kubernetes 概念和工具"^] 。
+
+
+
+== Kubernetes 与NetApp产品集成
+
+NetApp的存储产品组合与 Kubernetes 集群的许多方面集成，提供高级数据管理功能，从而增强 Kubernetes 部署的功能、能力、性能和可用性。
+
+.Amazon FSx for NetApp ONTAP
+[%collapsible]
+====
+link:https://www.netapp.com/aws/fsx-ontap/["Amazon FSx for NetApp ONTAP"^]是一项完全托管的 AWS 服务，可让您启动和运行由NetApp ONTAP存储操作系统支持的文件系统。
+
+====
+.Azure NetApp Files
+[%collapsible]
+====
+https://www.netapp.com/azure/azure-netapp-files/["Azure NetApp Files"^]是由NetApp提供支持的企业级 Azure 文件共享服务。您可以在 Azure 中原生运行要求最高的基于文件的工作负载，并获得您期望从NetApp获得的高性能和丰富的数据管理功能。
+
+====
+.Cloud Volumes ONTAP
+[%collapsible]
+====
+link:https://www.netapp.com/cloud-services/cloud-volumes-ontap/["Cloud Volumes ONTAP"^]是一款纯软件存储设备，可在云端运行ONTAP数据管理软件。
+
+====
+.Google Cloud NetApp Volumes
+[%collapsible]
+====
+link:https://bluexp.netapp.com/google-cloud-netapp-volumes?utm_source=GitHub&utm_campaign=Trident["Google Cloud NetApp Volumes"^]是 Google Cloud 中完全托管的文件存储服务，提供高性能、企业级的文件存储。
+
+====
+.Element软件
+[%collapsible]
+====
+https://www.netapp.com/data-management/element-software/["Element"^]通过保证性能并实现简化和精简的存储布局，使存储管理员能够整合工作负载。
+
+====
+.NetApp HCI
+[%collapsible]
+====
+link:https://docs.netapp.com/us-en/hci/docs/concept_hci_product_overview.html["NetApp HCI"^]通过自动化日常任务，简化数据中心的管理和扩展，使基础设施管理员能够专注于更重要的功能。
+
+Trident可以直接针对底层NetApp HCI存储平台，为容器化应用程序配置和管理存储设备。
+
+====
+.NetApp ONTAP
+[%collapsible]
+====
+link:https://docs.netapp.com/us-en/ontap/index.html["NetApp ONTAP"^]NetApp是 NetApp 的多协议统一存储操作系统，可为任何应用程序提供高级数据管理功能。
+
+ONTAP系统具有全闪存、混合或全 HDD 配置，并提供多种不同的部署模型：本地FAS、AFA 和ASA集群、 ONTAP Select和Cloud Volumes ONTAP。  Trident支持这些ONTAP部署模型。
+
+====

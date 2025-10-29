@@ -1,0 +1,226 @@
+---
+sidebar: sidebar 
+permalink: trident-use/trident-fsx-iam-role.html 
+keywords: Amazon FSx for NetApp ONTAP, FSx for ONTAP, deploy Trident, integrate Trident, Trident 
+summary: '通过将Trident与Amazon FSx for NetApp ONTAP结合使用，您可以确保在 Amazon Elastic Kubernetes Service (EKS) 中运行的 Kubernetes 集群可以配置由ONTAP支持的块和文件持久卷。' 
+---
+= 创建 IAM 角色和 AWS Secret
+:hardbreaks:
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+您可以配置 Kubernetes pod 以通过 AWS IAM 角色进行身份验证来访问 AWS 资源，而不是提供显式的 AWS 凭证。
+
+
+NOTE: 要使用 AWS IAM 角色进行身份验证，您必须拥有一个使用 EKS 部署的 Kubernetes 集群。
+
+
+
+== 创建 AWS Secrets Manager 密钥
+
+由于Trident将向 FSx 虚拟服务器发出 API 来为您管理存储，因此它需要凭据才能执行此操作。传递这些凭证的安全方法是通过 AWS Secrets Manager 密钥。因此，如果您还没有 AWS Secrets Manager 密钥，则需要创建一个包含 vsadmin 帐户凭证的密钥。
+
+此示例创建一个 AWS Secrets Manager 密钥来存储Trident CSI 凭证：
+
+[source, console]
+----
+aws secretsmanager create-secret --name trident-secret --description "Trident CSI credentials"\
+  --secret-string "{\"username\":\"vsadmin\",\"password\":\"<svmpassword>\"}"
+----
+
+
+== 创建 IAM 策略
+
+Trident也需要 AWS 权限才能正常运行。因此，您需要创建一个策略，赋予Trident所需的权限。
+
+以下示例使用 AWS CLI 创建 IAM 策略：
+
+[source, console]
+----
+aws iam create-policy --policy-name AmazonFSxNCSIDriverPolicy --policy-document file://policy.json
+  --description "This policy grants access to Trident CSI to FSxN and Secrets manager"
+----
+*策略 JSON 示例*：
+
+[source, json]
+----
+{
+  "Statement": [
+    {
+      "Action": [
+        "fsx:DescribeFileSystems",
+        "fsx:DescribeVolumes",
+        "fsx:CreateVolume",
+        "fsx:RestoreVolumeFromSnapshot",
+        "fsx:DescribeStorageVirtualMachines",
+        "fsx:UntagResource",
+        "fsx:UpdateVolume",
+        "fsx:TagResource",
+        "fsx:DeleteVolume"
+      ],
+      "Effect": "Allow",
+      "Resource": "*"
+    },
+    {
+      "Action": "secretsmanager:GetSecretValue",
+      "Effect": "Allow",
+      "Resource": "arn:aws:secretsmanager:<aws-region>:<aws-account-id>:secret:<aws-secret-manager-name>*"
+    }
+  ],
+  "Version": "2012-10-17"
+}
+----
+
+
+=== 创建 Pod 身份或 IAM 角色以关联服务帐户 (IRSA)
+
+您可以配置 Kubernetes 服务账户，使其承担 AWS Identity and Access Management (IAM) 角色（使用 EKS Pod Identity 或 IAM 角色进行服务账户关联）(IRSA)。任何配置为使用该服务账户的 Pod 都可以访问该角色有权访问的任何 AWS 服务。
+
+[role="tabbed-block"]
+====
+.Pod 身份
+--
+Amazon EKS Pod 身份关联允许您管理应用程序的凭证，类似于 Amazon EC2 实例配置文件向 Amazon EC2 实例提供凭证的方式。
+
+*在 EKS 集群上安装 Pod Identity*：
+
+您可以通过 AWS 控制台创建 Pod 标识，也可以使用以下 AWS CLI 命令：
+
+[listing]
+----
+aws eks create-addon --cluster-name <EKS_CLUSTER_NAME> --addon-name eks-pod-identity-agent
+----
+更多信息请参阅link:https://docs.aws.amazon.com/eks/latest/userguide/pod-id-agent-setup.html["设置 Amazon EKS Pod 身份代理"]。
+
+*创建 trust-relationship.json 文件*：
+
+创建 trust-relationship.json 文件，使 EKS 服务主体能够承担 Pod 身份的此角色。然后使用以下信任策略创建角色：
+
+[listing]
+----
+aws iam create-role \
+  --role-name fsxn-csi-role --assume-role-policy-document file://trust-relationship.json \
+  --description "fsxn csi pod identity role"
+----
+*trust-relationship.json 文件*：
+
+[source, JSON]
+----
+
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "pods.eks.amazonaws.com"
+      },
+      "Action": [
+        "sts:AssumeRole",
+        "sts:TagSession"
+      ]
+    }
+  ]
+}
+----
+*将角色策略附加到 IAM 角色*：
+
+将上一步创建的角色策略附加到已创建的 IAM 角色：
+
+[listing]
+----
+aws iam attach-role-policy \
+  --policy-arn arn:aws:iam::aws:111122223333:policy/fsxn-csi-policy \
+  --role-name fsxn-csi-role
+----
+*创建 Pod 身份关联*：
+
+在 IAM 角色和Trident服务帐户 (trident-controller) 之间创建 Pod 身份关联
+
+[listing]
+----
+aws eks create-pod-identity-association \
+  --cluster-name <EKS_CLUSTER_NAME> \
+  --role-arn arn:aws:iam::111122223333:role/fsxn-csi-role \
+  --namespace trident --service-account trident-controller
+----
+--
+.服务帐户关联 (IRSA) 的 IAM 角色
+--
+*使用 AWS CLI*：
+
+[listing]
+----
+aws iam create-role --role-name AmazonEKS_FSxN_CSI_DriverRole \
+  --assume-role-policy-document file://trust-relationship.json
+----
+*trust-relationship.json 文件：*
+
+[source, JSON]
+----
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Federated": "arn:aws:iam::<account_id>:oidc-provider/<oidc_provider>"
+      },
+      "Action": "sts:AssumeRoleWithWebIdentity",
+      "Condition": {
+        "StringEquals": {
+          "<oidc_provider>:aud": "sts.amazonaws.com",
+          "<oidc_provider>:sub": "system:serviceaccount:trident:trident-controller"
+        }
+      }
+    }
+  ]
+}
+----
+更新以下值 `trust-relationship.json`文件：
+
+* *<account_id>* - 您的 AWS 账户 ID
+* *<oidc_provider>* - 您的 EKS 集群的 OIDC。您可以通过运行以下命令获取oidc_provider：
++
+[source, console]
+----
+aws eks describe-cluster --name my-cluster --query "cluster.identity.oidc.issuer"\
+  --output text | sed -e "s/^https:\/\///"
+----
+
+
+*将 IAM 角色与 IAM 策略关联*：
+
+角色创建完成后，使用以下命令将策略（在上一步中创建的策略）附加到该角色：
+
+[source, console]
+----
+aws iam attach-role-policy --role-name my-role --policy-arn <IAM policy ARN>
+----
+*请核实 OICD 提供商是否已关联*：
+
+请确认您的 OIDC 提供程序已与您的集群关联。您可以使用以下命令进行验证：
+
+[source, console]
+----
+aws iam list-open-id-connect-providers | grep $oidc_id | cut -d "/" -f4
+----
+如果输出为空，请使用以下命令将 IAM OIDC 关联到您的集群：
+
+[source, console]
+----
+eksctl utils associate-iam-oidc-provider --cluster $cluster_name --approve
+----
+*如果您使用的是 eksctl*，请使用以下示例在 EKS 中为服务帐户创建 IAM 角色：
+
+[source, console]
+----
+eksctl create iamserviceaccount --name trident-controller --namespace trident \
+  --cluster <my-cluster> --role-name AmazonEKS_FSxN_CSI_DriverRole --role-only \
+  --attach-policy-arn <IAM-Policy ARN> --approve
+----
+--
+====

@@ -1,0 +1,40 @@
+---
+sidebar: sidebar 
+permalink: trident-reference/ports.html 
+keywords: Trident, port, ports 
+summary: 了解更多关于Trident通信所使用的端口的信息。 
+---
+= Trident港口
+:hardbreaks:
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+了解更多关于Trident用于通信的端口的信息。
+
+
+
+== Trident港口
+
+Trident使用以下端口在 Kubernetes 内部进行通信：
+
+[cols="2,4"]
+|===
+| 端口 | 目的 
+
+
+| 8443 | 反向通道 HTTPS 
+
+
+| 8001 | Prometheus 指标端点 
+
+
+| 8000 | Trident REST 服务器 
+
+
+| 17546 | Trident守护进程集 pod 使用的存活/就绪探测端口 
+|===
+
+NOTE: 安装过程中可以使用以下方法更改活性/就绪探针端口： `--probe-port`旗帜。务必确保工作节点上的其他进程没有使用该端口。

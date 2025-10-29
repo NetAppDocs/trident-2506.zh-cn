@@ -1,0 +1,533 @@
+---
+sidebar: sidebar 
+permalink: trident-use/ontap-nas-prep.html 
+keywords: trident backend, ontap nas, ontap-nas, ontap-nas-economy, ontap-nas-flexgroups 
+summary: 了解配置带有ONTAP NAS 驱动程序的ONTAP后端的要求、身份验证选项和导出策略。 
+---
+= 准备配置带有ONTAP NAS 驱动程序的后端
+:hardbreaks:
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+了解配置带有ONTAP NAS 驱动程序的ONTAP后端的要求、身份验证选项和导出策略。
+
+
+
+== 要求
+
+* 对于所有ONTAP后端， Trident要求至少将一个聚合分配给 SVM。
+* 您可以运行多个驱动程序，并创建指向其中一个或另一个驱动程序的存储类。例如，您可以配置一个使用以下方式的 Gold 类： `ontap-nas`驾驶员和使用青铜级的驾驶员 `ontap-nas-economy`一。
+* 所有 Kubernetes 工作节点都必须安装相应的 NFS 工具。请参阅link:worker-node-prep.html["此处"]更多详情请见下文。
+* Trident仅支持挂载到运行在 Windows 节点上的 pod 的 SMB 卷。参考 <<准备配置SMB卷>> 了解详情。
+
+
+
+
+== 对ONTAP后端进行身份验证
+
+Trident提供两种ONTAP后端身份验证方式。
+
+* 基于凭证：此模式需要对ONTAP后端拥有足够的权限。建议使用与预定义的安全登录角色关联的帐户，例如： `admin`或者 `vsadmin`确保与ONTAP版本最大程度兼容。
+* 基于证书：此模式要求后端安装证书， Trident才能与ONTAP集群通信。此处，后端定义必须包含客户端证书、密钥和受信任 CA 证书（如果使用，建议使用）的 Base64 编码值。
+
+
+您可以更新现有后端，以在基于凭据的方法和基于证书的方法之间进行切换。但是，一次只能支持一种身份验证方法。要切换到不同的身份验证方法，必须从后端配置中删除现有方法。
+
+
+WARNING: 如果您尝试同时提供凭据和证书，则后端创建将失败，并出现错误，提示配置文件中提供了多个身份验证方法。
+
+
+
+=== 启用基于凭据的身份验证
+
+Trident需要 SVM 范围/集群范围管理员的凭据才能与ONTAP后端通信。建议使用标准的、预定义的角色，例如： `admin`或者 `vsadmin`。这样可以确保与未来ONTAP版本向前兼容，这些版本可能会公开一些功能 API，供未来的Trident版本使用。虽然可以创建自定义安全登录角色并将其与Trident一起使用，但不建议这样做。
+
+后端定义示例如下所示：
+
+[role="tabbed-block"]
+====
+.YAML
+--
+[source, yaml]
+----
+---
+version: 1
+backendName: ExampleBackend
+storageDriverName: ontap-nas
+managementLIF: 10.0.0.1
+dataLIF: 10.0.0.2
+svm: svm_nfs
+credentials:
+  name: secret-backend-creds
+----
+--
+.JSON
+--
+[source, json]
+----
+{
+  "version": 1,
+  "backendName": "ExampleBackend",
+  "storageDriverName": "ontap-nas",
+  "managementLIF": "10.0.0.1",
+  "dataLIF": "10.0.0.2",
+  "svm": "svm_nfs",
+  "credentials": {
+        "name": "secret-backend-creds"
+    }
+}
+----
+--
+====
+请注意，后端定义是唯一以纯文本形式存储凭据的地方。后端创建完成后，用户名/密码将使用 Base64 进行编码，并存储为 Kubernetes 密钥。后端创建/更新是唯一需要了解凭据的步骤。因此，这是一项仅限管理员执行的操作，由 Kubernetes/存储管理员执行。
+
+
+
+=== 启用基于证书的身份验证
+
+新的和现有的后端都可以使用证书与ONTAP后端通信。后端定义需要三个参数。
+
+* clientCertificate：客户端证书的 Base64 编码值。
+* clientPrivateKey：关联私钥的 Base64 编码值。
+* trustedCACertificate：受信任 CA 证书的 Base64 编码值。如果使用受信任的 CA，则必须提供此参数。如果没有使用受信任的证书颁发机构，则可以忽略此步骤。
+
+
+典型的工作流程包括以下步骤。
+
+.步骤
+. 生成客户端证书和密钥。生成时，将通用名称 (CN) 设置为要进行身份验证的ONTAP用户。
++
+[listing]
+----
+openssl req -x509 -nodes -days 1095 -newkey rsa:2048 -keyout k8senv.key -out k8senv.pem -subj "/C=US/ST=NC/L=RTP/O=NetApp/CN=vsadmin"
+----
+. 向ONTAP集群添加受信任的 CA 证书。这可能已经由存储管理员处理了。如果没有使用受信任的证书颁发机构，则忽略此操作。
++
+[listing]
+----
+security certificate install -type server -cert-name <trusted-ca-cert-name> -vserver <vserver-name>
+ssl modify -vserver <vserver-name> -server-enabled true -client-enabled true -common-name <common-name> -serial <SN-from-trusted-CA-cert> -ca <cert-authority>
+----
+. 在ONTAP集群上安装客户端证书和密钥（来自步骤 1）。
++
+[listing]
+----
+security certificate install -type client-ca -cert-name <certificate-name> -vserver <vserver-name>
+security ssl modify -vserver <vserver-name> -client-enabled true
+----
+. 确认ONTAP安全登录角色支持 `cert`身份验证方法。
++
+[listing]
+----
+security login create -user-or-group-name vsadmin -application ontapi -authentication-method cert -vserver <vserver-name>
+security login create -user-or-group-name vsadmin -application http -authentication-method cert -vserver <vserver-name>
+----
+. 使用生成的证书进行身份验证。请将 < ONTAP管理 LIF> 和 <vserver 名称> 替换为管理 LIF IP 地址和 SVM 名称。您必须确保 LIF 的服务策略已设置为 `default-data-management`。
++
+[listing]
+----
+curl -X POST -Lk https://<ONTAP-Management-LIF>/servlets/netapp.servlets.admin.XMLrequest_filer --key k8senv.key --cert ~/k8senv.pem -d '<?xml version="1.0" encoding="UTF-8"?><netapp xmlns="http://www.netapp.com/filer/admin" version="1.21" vfiler="<vserver-name>"><vserver-get></vserver-get></netapp>'
+----
+. 使用 Base64 对证书、密钥和受信任的 CA 证书进行编码。
++
+[listing]
+----
+base64 -w 0 k8senv.pem >> cert_base64
+base64 -w 0 k8senv.key >> key_base64
+base64 -w 0 trustedca.pem >> trustedca_base64
+----
+. 使用上一步获得的值创建后端。
++
+[listing]
+----
+cat cert-backend-updated.json
+{
+"version": 1,
+"storageDriverName": "ontap-nas",
+"backendName": "NasBackend",
+"managementLIF": "1.2.3.4",
+"dataLIF": "1.2.3.8",
+"svm": "vserver_test",
+"clientCertificate": "Faaaakkkkeeee...Vaaalllluuuueeee",
+"clientPrivateKey": "LS0tFaKE...0VaLuES0tLS0K",
+"storagePrefix": "myPrefix_"
+}
+
+#Update backend with tridentctl
+tridentctl update backend NasBackend -f cert-backend-updated.json -n trident
++------------+----------------+--------------------------------------+--------+---------+
+|    NAME    | STORAGE DRIVER |                 UUID                 | STATE  | VOLUMES |
++------------+----------------+--------------------------------------+--------+---------+
+| NasBackend | ontap-nas      | 98e19b74-aec7-4a3d-8dcf-128e5033b214 | online |       9 |
++------------+----------------+--------------------------------------+--------+---------+
+----
+
+
+
+
+=== 更新身份验证方法或轮换凭据
+
+您可以更新现有后端，以使用不同的身份验证方法或轮换其凭据。这种方法是双向的：使用用户名/密码的后端可以更新为使用证书；使用证书的后端可以更新为基于用户名/密码的后端。为此，您必须删除现有的身份验证方法并添加新的身份验证方法。然后使用包含所需参数的更新后的 backend.json 文件来执行 `tridentctl update backend`。
+
+[listing]
+----
+cat cert-backend-updated.json
+----
+[source, json]
+----
+{
+"version": 1,
+"storageDriverName": "ontap-nas",
+"backendName": "NasBackend",
+"managementLIF": "1.2.3.4",
+"dataLIF": "1.2.3.8",
+"svm": "vserver_test",
+"username": "vsadmin",
+"password": "password",
+"storagePrefix": "myPrefix_"
+}
+----
+[listing]
+----
+#Update backend with tridentctl
+tridentctl update backend NasBackend -f cert-backend-updated.json -n trident
++------------+----------------+--------------------------------------+--------+---------+
+|    NAME    | STORAGE DRIVER |                 UUID                 | STATE  | VOLUMES |
++------------+----------------+--------------------------------------+--------+---------+
+| NasBackend | ontap-nas      | 98e19b74-aec7-4a3d-8dcf-128e5033b214 | online |       9 |
++------------+----------------+--------------------------------------+--------+---------+
+----
+
+NOTE: 轮换密码时，存储管理员必须首先更新ONTAP上用户的密码。接下来将进行后端更新。轮换证书时，可以为用户添加多个证书。然后更新后端以使用新证书，之后即可从ONTAP集群中删除旧证书。
+
+更新后端不会中断对已创建卷的访问，也不会影响之后建立的卷连接。后端更新成功表明Trident可以与ONTAP后端通信并处理未来的卷操作。
+
+
+
+=== 为Trident创建自定义ONTAP角色
+
+您可以创建一个具有最低权限的ONTAP集群角色，这样您就不必使用ONTAP管理员角色在Trident中执行操作。在Trident后端配置中包含用户名时， Trident将使用您创建的ONTAP集群角色来执行操作。
+
+请参阅link:https://github.com/NetApp/trident/tree/master/contrib/ontap/trident_role["Trident自定义角色生成器"]有关创建Trident自定义角色的更多信息。
+
+[role="tabbed-block"]
+====
+.使用ONTAP CLI
+--
+. 使用以下命令创建新角色：
++
+`security login role create <role_name\> -cmddirname "command" -access all –vserver <svm_name\>`
+
+. 为Trident用户创建用户名：
++
+`security login create -username <user_name\> -application ontapi -authmethod <password\> -role <name_of_role_in_step_1\> –vserver <svm_name\> -comment "user_description"`
+
+. 将角色映射到用户：
++
+`security login modify username <user_name\> –vserver <svm_name\> -role <role_name\> -application ontapi -application console -authmethod <password\>`
+
+
+
+--
+.使用系统管理器
+--
+在ONTAP系统管理器中执行以下步骤：
+
+. *创建自定义角色*：
++
+.. 要在集群级别创建自定义角色，请选择“集群 > 设置”。
++
+（或者）要在 SVM 级别创建自定义角色，请选择“存储”>“存储虚拟机”> `required SVM` > 设置 > 用户和角色*。
+
+.. 选择“用户和角色”旁边的箭头图标（*->*）。
+.. 在“角色”下选择“+添加”。
+.. 定义角色规则，然后点击“保存”。
+
+
+. 将角色映射到Trident用户： + 在“用户和角色”页面上执行以下步骤：
++
+.. 在“用户”下方选择“添加”图标 *+*。
+.. 选择所需的用户名，然后在“角色”下拉菜单中选择角色。
+.. 单击“保存”。
+
+
+
+
+--
+====
+更多信息请参阅以下页面：
+
+* link:https://kb.netapp.com/on-prem/ontap/Ontap_OS/OS-KBs/FAQ__Custom_roles_for_administration_of_ONTAP["用于管理ONTAP的自定义角色"^]或者link:https://docs.netapp.com/us-en/ontap/authentication/define-custom-roles-task.html["定义自定义角色"^]
+* link:https://docs.netapp.com/us-en/ontap-automation/rest/rbac_roles_users.html#rest-api["与角色和用户协作"^]
+
+
+
+
+== 管理 NFS 导出策略
+
+Trident使用 NFS 导出策略来控制对其所配置卷的访问。
+
+Trident在处理出口策略时提供两种选择：
+
+* Trident可以动态管理导出策略本身；在这种操作模式下，存储管理员指定一个 CIDR 块列表，这些 CIDR 块代表可接受的 IP 地址。 Trident会在发布时自动将属于这些范围内的适用节点 IP 添加到导出策略中。或者，如果没有指定 CIDR，则会将发布卷的节点上找到的所有全局范围的单播 IP 添加到导出策略中。
+* 存储管理员可以创建导出策略并手动添加规则。除非在配置中指定了不同的导出策略名称，否则Trident将使用默认导出策略。
+
+
+
+
+=== 动态管理出口策略
+
+Trident提供了动态管理ONTAP后端导出策略的功能。这样，存储管理员就可以指定工作节点 IP 的允许地址空间，而无需手动定义明确的规则。它大大简化了导出策略管理；对导出策略的修改不再需要对存储集群进行人工干预。此外，这有助于将对存储集群的访问限制在仅允许挂载卷且 IP 地址在指定范围内的节点上，从而支持细粒度和自动化管理。
+
+
+NOTE: 使用动态导出策略时，请勿使用网络地址转换（NAT）。使用 NAT 时，存储控制器看到的是前端 NAT 地址而不是实际的 IP 主机地址，因此当在导出规则中找不到匹配项时，访问将被拒绝。
+
+
+
+==== 示例
+
+必须使用两种配置选项。以下是一个后端定义示例：
+
+[source, yaml]
+----
+---
+version: 1
+storageDriverName: ontap-nas-economy
+backendName: ontap_nas_auto_export
+managementLIF: 192.168.0.135
+svm: svm1
+username: vsadmin
+password: password
+autoExportCIDRs:
+  - 192.168.0.0/24
+autoExportPolicy: true
+
+----
+
+NOTE: 使用此功能时，必须确保 SVM 中的根连接点具有先前创建的导出策略，该策略的导出规则允许节点 CIDR 块（例如默认导出策略）。始终遵循NetApp推荐的最佳实践，为Trident专用一个 SVM。
+
+下面以上述示例为例，解释此功能的工作原理：
+
+* `autoExportPolicy`设置为 `true`。这表明Trident会为使用此后端配置的每个卷创建一个导出策略。 `svm1`使用 SVM 处理规则的添加和删除 `autoexportCIDRs`地址块。在卷连接到节点之前，该卷使用空的导出策略，没有任何规则来防止对该卷的未经授权的访问。当卷发布到节点时， Trident会创建一个导出策略，该策略的名称与包含指定 CIDR 块内节点 IP 的底层 qtree 的名称相同。这些 IP 地址也将添加到父FlexVol volume使用的导出策略中。
++
+** 例如：
++
+*** 后端 UUID 403b5326-8482-40db-96d0-d83fb3f4daec
+*** `autoExportPolicy`设置为 `true`
+*** 存储前缀 `trident`
+*** PVC UUID a79bcf5f-7b6d-4a40-9876-e2551f159c1c
+*** 名为 trident_pvc_a79bcf5f_7b6d_4a40_9876_e2551f159c1c 的 qtree 为名为FlexVol的 FlexVol 创建了一个导出策略。 `trident-403b5326-8482-40db96d0-d83fb3f4daec` ，名为 qtree 的导出策略
+`trident_pvc_a79bcf5f_7b6d_4a40_9876_e2551f159c1c`以及一个名为“空的导出策略”的 `trident_empty`在支持向量机上。 FlexVol导出策略的规则将是 qtree 导出策略中包含的任何规则的超集。任何未附加的卷都将重用空导出策略。
+
+
+
+
+* `autoExportCIDRs`包含地址块列表。此字段为可选字段，默认值为 ["0.0.0.0/0", "::/0"]。如果未定义， Trident会添加在工作节点上找到的所有具有发布的全局作用域的单播地址。
+
+
+在这个例子中， `192.168.0.0/24`已提供地址空间。这意味着，位于此地址范围内且已发布 Kubernetes 节点 IP 的节点将被添加到Trident创建的导出策略中。当Trident注册它运行所在的节点时，它会检索该节点的 IP 地址，并将其与提供的地址块进行比对。 `autoExportCIDRs`在发布时， Trident在过滤 IP 地址后，会为它要发布到的节点的客户端 IP 地址创建导出策略规则。
+
+您可以更新 `autoExportPolicy`和 `autoExportCIDRs`创建后端之后，需要进行以下操作。您可以为自动管理的后端添加新的 CIDR，或者删除现有的 CIDR。删除 CIDR 时要格外小心，确保现有连接不会断开。您也可以选择禁用 `autoExportPolicy`对于后端，如果出现问题，则回退到手动创建的导出策略。这将需要进行设置 `exportPolicy`后端配置中的参数。
+
+Trident创建或更新后端后，您可以使用以下命令检查后端： `tridentctl`或相应的 `tridentbackend`CRD：
+
+[listing]
+----
+./tridentctl get backends ontap_nas_auto_export -n trident -o yaml
+items:
+- backendUUID: 403b5326-8482-40db-96d0-d83fb3f4daec
+  config:
+    aggregate: ""
+    autoExportCIDRs:
+    - 192.168.0.0/24
+    autoExportPolicy: true
+    backendName: ontap_nas_auto_export
+    chapInitiatorSecret: ""
+    chapTargetInitiatorSecret: ""
+    chapTargetUsername: ""
+    chapUsername: ""
+    dataLIF: 192.168.0.135
+    debug: false
+    debugTraceFlags: null
+    defaults:
+      encryption: "false"
+      exportPolicy: <automatic>
+      fileSystemType: ext4
+----
+当一个节点被移除时， Trident会检查所有导出策略，以移除与该节点对应的访问规则。通过从受管后端导出策略中移除此节点 IP， Trident可以防止恶意挂载，除非集群中的新节点重新使用此 IP。
+
+对于先前存在的后端，使用以下方式更新后端： `tridentctl update backend`确保Trident自动管理出口策略。这样，当需要时，就会创建两个以后端 UUID 和 qtree 名称命名的新导出策略。后端存在的卷在卸载并重新挂载后，将使用新创建的导出策略。
+
+
+NOTE: 删除具有自动管理导出策略的后端将删除动态创建的导出策略。如果后端被重新创建，它将被视为一个新的后端，并将导致创建一个新的导出策略。
+
+如果运行中的节点的 IP 地址更新，则必须重启该节点上的Trident pod。  Trident随后将更新其管理的后端的导出策略，以反映此 IP 变更。
+
+
+
+== 准备配置SMB卷
+
+稍作准备，您就可以使用以下方式配置 SMB 卷 `ontap-nas`司机。
+
+
+WARNING: 您必须在 SVM 上同时配置 NFS 和 SMB/CIFS 协议才能创建 `ontap-nas-economy`适用于ONTAP本地集群的 SMB 卷。如果未能配置这些协议中的任何一个，都会导致 SMB 卷创建失败。
+
+
+NOTE: `autoExportPolicy`不支持 SMB 卷。
+
+.开始之前
+在配置 SMB 卷之前，您必须具备以下条件。
+
+* 一个 Kubernetes 集群，包含一个 Linux 控制器节点和至少一个运行 Windows Server 2022 的 Windows 工作节点。  Trident仅支持挂载到运行在 Windows 节点上的 pod 的 SMB 卷。
+* 至少有一个包含您的 Active Directory 凭据的Trident密钥。生成秘密 `smbcreds`：
++
+[listing]
+----
+kubectl create secret generic smbcreds --from-literal username=user --from-literal password='password'
+----
+* 配置为 Windows 服务的 CSI 代理。要配置 `csi-proxy`，请参阅link:https://github.com/kubernetes-csi/csi-proxy["GitHub：CSI代理"^]或者link:https://github.com/Azure/aks-engine/blob/master/docs/topics/csi-proxy-windows.md["GitHub：适用于 Windows 的 CSI 代理"^]适用于在 Windows 上运行的 Kubernetes 节点。
+
+
+.步骤
+. 对于本地部署的ONTAP，您可以选择创建 SMB 共享，或者Trident可以为您创建一个。
++
+
+NOTE: Amazon FSx for ONTAP需要 SMB 共享。
+
++
+您可以通过以下两种方式之一创建 SMB 管理共享：link:https://learn.microsoft.com/en-us/troubleshoot/windows-server/system-management-components/what-is-microsoft-management-console["Microsoft 管理控制台"^]共享文件夹管理单元或使用ONTAP CLI。使用ONTAP CLI 创建 SMB 共享：
+
++
+.. 如有必要，请创建共享的目录路径结构。
++
+这 `vserver cifs share create`该命令检查在创建共享时 -path 选项中指定的路径。如果指定的路径不存在，则命令执行失败。
+
+.. 创建与指定 SVM 关联的 SMB 共享：
++
+[listing]
+----
+vserver cifs share create -vserver vserver_name -share-name share_name -path path [-share-properties share_properties,...] [other_attributes] [-comment text]
+----
+.. 确认共享已创建：
++
+[listing]
+----
+vserver cifs share show -share-name share_name
+----
++
+
+NOTE: 请参阅link:https://docs.netapp.com/us-en/ontap/smb-config/create-share-task.html["创建 SMB 共享"^]了解详细信息。
+
+
+
+. 创建后端时，必须配置以下内容以指定 SMB 卷。有关所有 FSx for ONTAP后端配置选项，请参阅link:trident-fsx-examples.html["FSx for ONTAP配置选项和示例"]。
++
+[cols="1,2,1"]
+|===
+| 参数 | 描述 | 示例 
+
+
+| `smbShare` | 您可以指定以下一项：使用 Microsoft 管理控制台或ONTAP CLI 创建的 SMB 共享的名称；允许Trident创建 SMB 共享的名称；或者您可以将参数留空以防止对卷的公共共享访问。对于本地部署的ONTAP，此参数是可选的。此参数是Amazon FSx for ONTAP后端所必需的，不能为空。 | `smb-share` 
+
+
+| `nasType` | *必须设置为 `smb`.*如果为空，则默认为空。 `nfs` 。 | `smb` 
+
+
+| `securityStyle` | 新卷的安全样式。  *必须设置为 `ntfs`或者 `mixed`适用于 SMB 卷。* | `ntfs`或者 `mixed`适用于 SMB 卷 
+
+
+| `unixPermissions` | 新卷模式。  *对于 SMB 卷，此项必须留空。* | "" 
+|===
+
+
+
+
+=== 启用安全的 SMB
+
+从 25.06 版本开始， NetApp Trident支持使用以下方式安全配置创建的 SMB 卷： `ontap-nas`和 `ontap-nas-economy`后端。启用安全 SMB 后，您可以使用访问控制列表 (ACL) 为 Active Directory (AD) 用户和用户组提供对 SMB 共享的受控访问。
+
+.需要记住的要点
+* 输入 `ontap-nas-economy`不支持卷。
+* 仅支持只读克隆 `ontap-nas-economy`卷。
+* 如果启用了安全 SMB， Trident将忽略后端提到的 SMB 共享。
+* 更新 PVC 注解、存储类注解和后端字段不会更新 SMB 共享 ACL。
+* 克隆 PVC 注释中指定的 SMB 共享 ACL 将优先于源 PVC 中的 ACL。
+* 启用安全 SMB 时，请确保提供有效的 AD 用户。无效用户将不会被添加到访问控制列表 (ACL) 中。
+* 如果在后端、存储类和 PVC 中为同一个 AD 用户提供不同的权限，则权限优先级为：PVC、存储类，然后是后端。
+* 支持安全 SMB `ontap-nas`仅适用于托管卷导入，不适用于非托管卷导入。
+
+
+.步骤
+. 在 TridentBackendConfig 中指定 adAdminUser，如下例所示：
++
+[source, yaml]
+----
+apiVersion: trident.netapp.io/v1
+kind: TridentBackendConfig
+metadata:
+  name: backend-tbc-ontap
+  namespace: trident
+spec:
+  version: 1
+  storageDriverName: ontap-nas
+  managementLIF: 10.193.176.x
+  svm: svm0
+  useREST: true
+  defaults:
+    adAdminUser: tridentADtest
+  credentials:
+    name: backend-tbc-ontap-invest-secret
+----
+. 在存储类中添加注解。
++
+添加 `trident.netapp.io/smbShareAdUser`对存储类进行注解，以启用安全可靠的 SMB 连接。用户为注释指定的值 `trident.netapp.io/smbShareAdUser`应该与指定的用户名相同 `smbcreds`秘密。您可以从以下选项中选择一项 `smbShareAdUserPermission`： `full_control` ， `change` ， 或者 `read`。默认权限是 `full_control`。
+
+
+
+[source, yaml]
+----
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: ontap-smb-sc
+  annotations:
+    trident.netapp.io/smbShareAdUserPermission: change
+    trident.netapp.io/smbShareAdUser: tridentADuser
+parameters:
+  backendType: ontap-nas
+  csi.storage.k8s.io/node-stage-secret-name: smbcreds
+  csi.storage.k8s.io/node-stage-secret-namespace: trident
+  trident.netapp.io/nasType: smb
+provisioner: csi.trident.netapp.io
+reclaimPolicy: Delete
+volumeBindingMode: Immediate
+----
+. 创建 PVC。
++
+以下示例创建PVC：
+
+
+
+[listing]
+----
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: my-pvc4
+  namespace: trident
+  annotations:
+    trident.netapp.io/snapshotDirectory: "true"
+    trident.netapp.io/smbShareAccessControl: |
+      read:
+        - tridentADtest
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: ontap-smb-sc
+----

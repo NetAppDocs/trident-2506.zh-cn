@@ -1,0 +1,27 @@
+---
+sidebar: sidebar 
+permalink: trident-concepts/provisioning.html 
+keywords: provisioning, Trident 
+summary: Trident的配置过程分为两个主要阶段。第一阶段将存储类与一组合适的后端存储池关联起来，这是在进行配置之前必须进行的准备工作。第二阶段包括卷的创建本身，需要从与待创建卷的存储类别关联的存储池中选择一个存储池。 
+---
+= 配置
+:hardbreaks:
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Trident的配置过程分为两个主要阶段。第一阶段将存储类与一组合适的后端存储池关联起来，这是在进行配置之前必须进行的准备工作。第二阶段包括卷的创建本身，需要从与待创建卷的存储类别关联的存储池中选择一个存储池。
+
+
+
+== 存储类关联
+
+将后端存储池与存储类关联起来，取决于存储类的请求属性及其 `storagePools`， `additionalStoragePools` ， 和 `excludeStoragePools`列表。创建存储类时， Trident会将其每个后端提供的属性和池与存储类请求的属性和池进行比较。如果存储池的属性和名称与所有请求的属性和池名称匹配， Trident会将该存储池添加到该存储类的适用存储池集合中。此外， Trident还添加了列表中列出的所有存储池。 `additionalStoragePools`即使它们的属性不满足存储类的所有或任何请求属性，也要将其添加到该集合中。你应该使用 `excludeStoragePools`列出要覆盖和移除存储类使用的存储池。每次添加新的后端时， Trident都会执行类似的过程，检查其存储池是否满足现有存储类的要求，并删除任何被标记为排除的存储池。
+
+
+
+== 创建卷
+
+Trident然后利用存储类和存储池之间的关联来确定在哪里配置卷。创建卷时， Trident首先获取该卷存储类别的存储池集合，如果您为该卷指定了协议， Trident会删除那些无法提供所请求协议的存储池（例如， NetApp HCI/ SolidFire后端无法提供基于文件的卷，而ONTAP NAS 后端无法提供基于块的卷）。 Trident会随机化所得集合的顺序，以方便卷的均匀分布，然后遍历该集合，依次尝试在每个存储池上配置卷。如果一次成功，则返回成功结果，并将过程中遇到的任何失败记录下来。  Trident仅在无法为请求的存储类别和协议配置所有可用的存储池时才会返回失败。

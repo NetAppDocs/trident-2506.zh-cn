@@ -1,0 +1,166 @@
+---
+sidebar: sidebar 
+permalink: trident-use/vol-provision.html 
+keywords: volumes, pvc, pv, persistentvolume, persistentvolumeclaim, mount, pod, provision 
+summary: '创建一个持久卷 (PV) 和一个持久卷声明 (PVC)，使用配置的 Kubernetes StorageClass 请求访问 PV。然后您可以将光伏组件安装到支架上。' 
+---
+= 提供一定量
+:hardbreaks:
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+创建一个使用已配置的 Kubernetes StorageClass 的 PersistentVolumeClaim (PVC) 来请求访问 PV。然后您可以将光伏组件安装到支架上。
+
+
+
+== 概述
+
+一个 https://kubernetes.io/docs/concepts/storage/persistent-volumes["_PersistentVolumeClaim_"^]（PVC）是对集群上持久卷的访问请求。
+
+PVC 可以配置为请求存储特定尺寸或访问模式。使用关联的 StorageClass，集群管理员可以控制的不仅仅是 PersistentVolume 的大小和访问模式，还可以控制性能或服务级别。
+
+制作好PVC管后，就可以将管体安装到管座中。
+
+
+
+== 制作PVC管
+
+.步骤
+. 创建 PVC。
++
+[listing]
+----
+kubectl create -f pvc.yaml
+----
+. 核实PVC状态。
++
+[listing]
+----
+kubectl get pvc
+----
+
+
+[listing]
+----
+NAME        STATUS  VOLUME     CAPACITY   ACCESS MODES  STORAGECLASS AGE
+pvc-storage Bound   pv-name    1Gi        RWO                  5m
+----
+. 将音量旋钮安装在一个音控器中。
++
+[listing]
+----
+kubectl create -f pv-pod.yaml
+----
++
+
+NOTE: 您可以使用以下方式监控进度 `kubectl get pod --watch`。
+
+. 确认卷已挂载到 `/my/mount/path`。
++
+[listing]
+----
+kubectl exec -it task-pv-pod -- df -h /my/mount/path
+----
+. 现在您可以删除该 Pod 了。  Pod 应用将不复存在，但卷将保留。
++
+[listing]
+----
+kubectl delete pod pv-pod
+----
+
+
+
+
+=== 样品清单
+
+.PersistentVolumeClaim 样本清单
+[%collapsible]
+====
+这些示例展示了PVC的基本配置选项。
+
+.PVC管材，带RWO通道
+此示例展示了一个具有 RWO 访问权限的基本 PVC，它与一个名为 StorageClass 的 StorageClass 相关联。 `basic-csi` 。
+
+[source, yaml]
+----
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: pvc-storage
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: basic-csi
+----
+.PVC 和 NVMe/TCP
+此示例展示了一个与名为 StorageClass 的 StorageClass 关联的、具有 RWO 访问权限的 NVMe/TCP 基本 PVC。 `protection-gold` 。
+
+[source, yaml]
+----
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+name: pvc-san-nvme
+spec:
+accessModes:
+  - ReadWriteOnce
+resources:
+  requests:
+    storage: 300Mi
+storageClassName: protection-gold
+----
+====
+.Pod清单示例
+[%collapsible]
+====
+这些示例展示了将 PVC 连接到舱体的基本配置。
+
+.基本配置
+[source, yaml]
+----
+kind: Pod
+apiVersion: v1
+metadata:
+  name: pv-pod
+spec:
+  volumes:
+    - name: storage
+      persistentVolumeClaim:
+       claimName: pvc-storage
+  containers:
+    - name: pv-container
+      image: nginx
+      ports:
+        - containerPort: 80
+          name: "http-server"
+      volumeMounts:
+        - mountPath: "/my/mount/path"
+          name: storage
+----
+.基本 NVMe/TCP 配置
+[source, yaml]
+----
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-nginx
+spec:
+  volumes:
+    - name: basic-pvc
+      persistentVolumeClaim:
+        claimName: pvc-san-nvme
+  containers:
+    - name: task-pv-container
+      image: nginx
+      volumeMounts:
+        - mountPath: "/my/mount/path"
+          name: basic-pvc
+----
+====
+请参阅link:../trident-reference/objects.html["Kubernetes 和Trident对象"]有关存储类如何与……交互的详细信息 `PersistentVolumeClaim`以及控制Trident如何分配容量的参数。

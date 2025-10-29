@@ -1,0 +1,711 @@
+---
+sidebar: sidebar 
+permalink: trident-use/ontap-san-examples.html 
+keywords: map backends, storage classes, trident backend, ontap san, ontap san economy, options, storageclasses, fsx, metrocluster, ad, active directory 
+summary: 了解如何在Trident安装中创建和使用ONTAP SAN 驱动程序。本节提供后端配置示例以及如何将后端映射到 StorageClasses 的详细信息。 
+---
+= ONTAP SAN 配置选项和示例
+:hardbreaks:
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+了解如何在Trident安装中创建和使用ONTAP SAN 驱动程序。本节提供后端配置示例以及将后端映射到 StorageClasses 的详细信息。
+
+link:https://docs.netapp.com/us-en/asa-r2/get-started/learn-about.html["ASA r2 系统"^]与其他ONTAP系统（ASA、 AFF和FAS）在存储层的实现上有所不同。这些变化会影响某些参数的使用，如注释中所述。link:https://docs.netapp.com/us-en/asa-r2/learn-more/hardware-comparison.html["了解更多关于ASA r2 系统与其他ONTAP系统之间的区别"^]。
+
+
+NOTE: 只有 `ontap-san`ASA r2 系统支持驱动程序（支持 iSCSI 和 NVMe/TCP 协议）。
+
+在Trident后端配置中，无需指定您的系统是ASA r2。当您选择 `ontap-san`作为 `storageDriverName`Trident可自动检测ASA r2 或传统的ONTAP系统。如下表所示，某些后端配置参数不适用于ASA r2 系统。
+
+
+
+== 后端配置选项
+
+请参阅下表了解后端配置选项：
+
+[cols="1,3,2"]
+|===
+| 参数 | 描述 | 默认 
+
+
+| `version` |  | 始终为 1 
+
+
+| `storageDriverName` | 存储驱动程序的名称 | `ontap-san`或者 `ontap-san-economy` 
+
+
+| `backendName` | 自定义名称或存储后端 | 驱动程序名称 + "_" + dataLIF 
+
+
+| `managementLIF`  a| 
+集群或 SVM 管理 LIF 的 IP 地址。
+
+可以指定一个完全限定域名（FQDN）。
+
+如果Trident安装时使用了 IPv6 标志，则可以设置为使用 IPv6 地址。  IPv6 地址必须用方括号定义，例如： `[28e8:d9fb:a825:b7bf:69a8:d02f:9e7b:3555]` 。
+
+为了实现MetroCluster 的无缝切换，请参阅<<mcc-best>>。
+
+
+NOTE: 如果您使用的是“vsadmin”凭据， `managementLIF`必须是SVM的凭据；如果使用“admin”凭据， `managementLIF`必须是集群的那个。
+| "10.0.0.1", "[2001:1234:abcd::fefe]" 
+
+
+| `dataLIF` | LIF协议的IP地址。如果Trident安装时使用了 IPv6 标志，则可以设置为使用 IPv6 地址。  IPv6 地址必须用方括号定义，例如： `[28e8:d9fb:a825:b7bf:69a8:d02f:9e7b:3555]` 。 *请勿指定使用 iSCSI。*Trident的使用link:https://docs.netapp.com/us-en/ontap/san-admin/selective-lun-map-concept.html["ONTAP选择性 LUN 地图"^]发现建立多路径会话所需的 iSCSI LIF。如果出现以下情况，则会生成警告： `dataLIF`已明确定义。 *Metrocluster 除外。*查看<<mcc-best>>。 | 由支持向量机导出 
+
+
+| `svm` | 要使用的存储虚拟机 *Metrocluster 除外。*查看<<mcc-best>>。 | 如果是 SVM 则推导而来 `managementLIF`已指定 
+
+
+| `useCHAP` | 使用 CHAP 对ONTAP SAN 驱动程序的 iSCSI 进行身份验证 [布尔值]。设置为 `true`让Trident配置并使用双向 CHAP 作为后端给定 SVM 的默认身份验证。参考 link:ontap-san-prep.html["准备配置后端ONTAP SAN 驱动程序"] 了解详情。  *不支持FCP或NVMe/TCP协议。* | `false` 
+
+
+| `chapInitiatorSecret` | CHAP 发起者密钥。如果是必填项 `useCHAP=true` | "" 
+
+
+| `labels` | 要应用于卷的任意 JSON 格式标签集 | "" 
+
+
+| `chapTargetInitiatorSecret` | CHAP 目标发起者密钥。如果是必填项 `useCHAP=true` | "" 
+
+
+| `chapUsername` | 入站用户名。如果是必填项 `useCHAP=true` | "" 
+
+
+| `chapTargetUsername` | 目标用户名。如果是必填项 `useCHAP=true` | "" 
+
+
+| `clientCertificate` | 客户端证书的 Base64 编码值。用于基于证书的身份验证 | "" 
+
+
+| `clientPrivateKey` | 客户端私钥的 Base64 编码值。用于基于证书的身份验证 | "" 
+
+
+| `trustedCACertificate` | 受信任 CA 证书的 Base64 编码值。可选。用于基于证书的身份验证。 | "" 
+
+
+| `username` | 与ONTAP集群通信所需的用户名。用于基于凭证的身份验证。有关 Active Directory 身份验证，请参阅 link:../trident-use/ontap-san-examples.html#authenticate-trident-to-a-backend-svm-using-active-directory-credentials["使用 Active Directory 凭据向后端 SVM 验证Trident 的身份"]。 | "" 
+
+
+| `password` | 与ONTAP集群通信所需的密码。用于基于凭证的身份验证。有关 Active Directory 身份验证，请参阅 link:../trident-use/ontap-san-examples.html#authenticate-trident-to-a-backend-svm-using-active-directory-credentials["使用 Active Directory 凭据向后端 SVM 验证Trident 的身份"]。 | "" 
+
+
+| `svm` | 使用的存储虚拟机 | 如果是 SVM 则推导而来 `managementLIF`已指定 
+
+
+| `storagePrefix` | 在 SVM 中配置新卷时使用的前缀。之后无法修改。要更新此参数，您需要创建一个新的后端。 | `trident` 
+
+
+| `aggregate`  a| 
+用于配置的聚合（可选；如果设置，则必须分配给 SVM）。对于 `ontap-nas-flexgroup`驱动程序，此选项将被忽略。如果未分配，则可以使用任何可用的聚合来配置FlexGroup卷。
+
+
+NOTE: 当 SVM 中的聚合数据更新时， Trident会自动轮询 SVM 进行更新，而无需重启Trident控制器。当您在Trident中配置特定聚合以配置卷时，如果该聚合被重命名或移出 SVM，则在轮询 SVM 聚合时， Trident中的后端将变为失败状态。您必须将聚合更改为 SVM 上存在的聚合，或者将其完全删除，才能使后端恢复联机。
+
+*请勿指定用于ASA r2 系统*。
+ a| 
+""
+
+
+
+| `limitAggregateUsage` | 如果使用率超过此百分比，则配置失败。如果您使用的是Amazon FSx for NetApp ONTAP后端，请勿指定 `limitAggregateUsage`。提供的 `fsxadmin`和 `vsadmin`不包含检索汇总使用情况和使用Trident限制它所需的权限。  *请勿指定用于ASA r2 系统*。 | （默认情况下不强制执行） 
+
+
+| `limitVolumeSize` | 如果请求的卷大小大于此值，则配置失败。同时限制其管理的 LUN 卷的最大大小。 | （默认情况下不强制执行） 
+
+
+| `lunsPerFlexvol` | 每个 Flexvol 的最大 LUN 数量必须在 [50, 200] 范围内 | `100` 
+
+
+| `debugTraceFlags` | 故障排除时要使用的调试标志。例如，{"api":false, "method":true} 除非您正在进行故障排除并且需要详细的日志转储，否则请勿使用此方法。 | `null` 
+
+
+| `useREST`  a| 
+使用ONTAP REST API 的布尔参数。
+
+ `useREST`设置为 `true`Trident使用ONTAP REST API 与后端通信；当设置为 `false`Trident使用 ONTAPI (ZAPI) 调用与后端通信。此功能需要ONTAP 9.11.1 及更高版本。此外，所使用的ONTAP登录角色必须具有访问权限。 `ontapi`应用。预定义项满足了这一点。 `vsadmin`和 `cluster-admin`角色。从Trident 24.06 版本和ONTAP 9.15.1 或更高版本开始， `useREST`设置为 `true`默认；更改 `useREST`到 `false`使用 ONTAPI (ZAPI) 调用。
+
+`useREST`完全符合 NVMe/TCP 标准。
+
+
+NOTE: NVMe 仅支持ONTAP REST API，不支持 ONTAPI (ZAPI)。
+
+*如果指定，则始终设置为 `true`适用于ASA r2 系统*。
+| `true`适用于ONTAP 9.15.1 或更高版本，否则 `false`。 
+
+
+ a| 
+`sanType`
+| 用于选择 `iscsi`对于 iSCSI， `nvme`适用于 NVMe/TCP 或 `fcp`用于光纤通道 (FC) 上的 SCSI。 | `iscsi`如果为空 
+
+
+| `formatOptions`  a| 
+使用 `formatOptions`为以下情况指定命令行参数 `mkfs`该命令将在每次格式化卷时应用。这样您就可以根据自己的喜好格式化音量。请确保指定与 mkfs 命令选项类似的 formatOptions，但不包括设备路径。例如：“-E nodiscard”
+
+*支持 `ontap-san`和 `ontap-san-economy`支持 iSCSI 协议的驱动程序。*  *此外，在使用 iSCSI 和 NVMe/TCP 协议时， ASA r2 系统也受支持。*
+ a| 
+
+
+
+| `limitVolumePoolSize` | 在 ontap-san-economy 后端中使用 LUN 时可请求的最大FlexVol大小。 | （默认情况下不强制执行） 
+
+
+| `denyNewVolumePools` | 限制 `ontap-san-economy`后端创建新的FlexVol卷来包含它们的 LUN。只有预先存在的 Flexvol 才能用于配置新的 PV。 |  
+|===
+
+
+=== 使用 formatOptions 的建议
+
+Trident建议采用以下选项来加快格式化过程：
+
+*-E nodiscard:*
+
+* 保留，不要在执行 mkfs 时尝试丢弃块（最初丢弃块对固态设备和稀疏/精简配置存储很有用）。这取代了已弃用的选项“-K”，并且适用于所有文件系统（xfs、ext3 和 ext4）。
+
+
+
+
+=== 使用 Active Directory 凭据向后端 SVM 验证Trident 的身份
+
+您可以配置Trident以使用 Active Directory (AD) 凭据对后端 SVM 进行身份验证。在 AD 帐户可以访问 SVM 之前，您必须配置 AD 域控制器对集群或 SVM 的访问权限。对于使用 AD 帐户进行集群管理，您必须创建域隧道。参考 link:https://docs.netapp.com/us-en/ontap/authentication/enable-ad-users-groups-access-cluster-svm-task.html["在ONTAP中配置 Active Directory 域控制器访问"^] 了解详情。
+
+.步骤
+. 为后端 SVM 配置域名系统 (DNS) 设置：
++
+`vserver services dns create -vserver <svm_name> -dns-servers <dns_server_ip1>,<dns_server_ip2>`
+
+. 运行以下命令在 Active Directory 中为 SVM 创建计算机帐户：
++
+`vserver active-directory create -vserver DataSVM -account-name ADSERVER1 -domain demo.netapp.com`
+
+. 使用此命令创建 AD 用户或组来管理集群或 SVM
++
+`security login create -vserver <svm_name> -user-or-group-name <ad_user_or_group> -application <application> -authentication-method domain -role vsadmin`
+
+. 在Trident后端配置文件中，设置 `username` 和 `password` 参数分别为 AD 用户或组名称和密码。
+
+
+
+
+== 卷配置的后端配置选项
+
+您可以使用以下选项控制默认配置。 `defaults`配置部分。例如，请参见下面的配置示例。
+
+[cols="1,3,2"]
+|===
+| 参数 | 描述 | 默认 
+
+
+| `spaceAllocation` | LUN 的空间分配 | “true” *如果指定，则设置为 `true`适用于ASA r2 系统*。 
+
+
+| `spaceReserve` | 空间预留模式；“无”（细）或“大量”（粗）。  *设置为 `none`适用于ASA r2* 系统。 | “没有任何” 
+
+
+| `snapshotPolicy` | 要使用的快照策略。  *设置为 `none`适用于ASA r2 系统*。 | “没有任何” 
+
+
+| `qosPolicy` | 要为创建的卷分配的 QoS 策略组。每个存储池/后端选择 qosPolicy 或 adaptiveQosPolicy 之一。将 QoS 策略组与Trident结合使用需要ONTAP 9.8 或更高版本。您应该使用非共享的 QoS 策略组，并确保该策略组单独应用于每个成员。共享的 QoS 策略组强制规定所有工作负载的总吞吐量上限。 | "" 
+
+
+| `adaptiveQosPolicy` | 要为创建的卷分配的自适应 QoS 策略组。每个存储池/后端选择 qosPolicy 或 adaptiveQosPolicy 之一 | "" 
+
+
+| `snapshotReserve` | 为快照预留的卷百分比。  *请勿指定用于ASA r2 系统*。 | 如果为“0”， `snapshotPolicy`为“无”，否则为“ 
+
+
+| `splitOnClone` | 创建时将克隆体从其母体中分离出来 | "false" 
+
+
+| `encryption` | 在新卷上启用NetApp卷加密 (NVE)；默认设置为 `false`。要使用此选项，必须在集群上获得 NVE 许可并启用 NVE。如果后端启用了 NAE，则在Trident中配置的任何卷都将启用 NAE。更多信息，请参阅：link:../trident-reco/security-reco.html["Trident如何与 NVE 和 NAE 协同工作"] 。 | “false” *如果指定，则设置为 `true`适用于ASA r2 系统*。 
+
+
+| `luksEncryption` | 启用LUKS加密。参考link:../trident-reco/security-luks.html["使用 Linux 统一密钥设置 (LUKS)"]。 | *设置为 `false`适用于ASA r2 系统*。 
+
+
+| `tieringPolicy` | 分层策略使用“无” *请勿为ASA r2 系统指定* 。 |  
+
+
+| `nameTemplate` | 用于创建自定义卷名称的模板。 | "" 
+|===
+
+
+=== 卷配置示例
+
+以下是一个定义了默认值的示例：
+
+[source, yaml]
+----
+---
+version: 1
+storageDriverName: ontap-san
+managementLIF: 10.0.0.1
+svm: trident_svm
+username: admin
+password: <password>
+labels:
+  k8scluster: dev2
+  backend: dev2-sanbackend
+storagePrefix: alternate-trident
+debugTraceFlags:
+  api: false
+  method: true
+defaults:
+  spaceReserve: volume
+  qosPolicy: standard
+  spaceAllocation: 'false'
+  snapshotPolicy: default
+  snapshotReserve: '10'
+
+----
+
+NOTE: 对于使用以下方式创建的所有卷 `ontap-san`驱动程序Trident为FlexVol增加了 10% 的额外容量，以容纳 LUN 元数据。  LUN 将按照用户在 PVC 中请求的确切大小进行配置。 Trident使FlexVol增加 10%（在ONTAP中显示为可用尺寸）。用户现在将获得他们所申请的可用容量。此项更改还可以防止 LUN 在可用空间未完全利用之前变为只读。这不适用于 ontap-san-economy。
+
+对于定义后端 `snapshotReserve`Trident计算体积大小的方法如下：
+
+[listing]
+----
+Total volume size = [(PVC requested size) / (1 - (snapshotReserve percentage) / 100)] * 1.1
+----
+1.1 是Trident为容纳 LUN 元数据而额外添加到FlexVol 的10%。为了 `snapshotReserve`= 5%，PVC 请求 = 5 GiB，总体积大小为 5.79 GiB，可用大小为 5.5 GiB。这 `volume show`该命令应显示与此示例类似的结果：
+
+image::../media/vol-show-san.png[显示 volume show 命令的输出结果。]
+
+目前，调整大小是将新计算方法应用于现有体积的唯一途径。
+
+
+
+== 最小配置示例
+
+以下示例展示了基本配置，其中大多数参数都保留默认值。这是定义后端最简单的方法。
+
+
+NOTE: 如果您在NetApp ONTAP上使用Amazon FSx和Trident， NetApp建议您为 LIF 指定 DNS 名称而不是 IP 地址。
+
+.ONTAP SAN 示例
+[%collapsible]
+====
+这是使用以下方法的基本配置： `ontap-san`司机。
+
+[source, yaml]
+----
+---
+version: 1
+storageDriverName: ontap-san
+managementLIF: 10.0.0.1
+svm: svm_iscsi
+labels:
+  k8scluster: test-cluster-1
+  backend: testcluster1-sanbackend
+username: vsadmin
+password: <password>
+----
+====
+.MetroCluster示例
+[#mcc-best%collapsible]
+====
+您可以配置后端，以避免在切换和切换回后端后手动更新后端定义。link:../trident-reco/backup.html#svm-replication-and-recovery["SVM复制和恢复"] 。
+
+为了实现无缝切换和切换回，请指定 SVM `managementLIF`并省略 `svm`参数。例如：
+
+[source, yaml]
+----
+version: 1
+storageDriverName: ontap-san
+managementLIF: 192.168.1.66
+username: vsadmin
+password: password
+----
+====
+.ONTAP SAN 经济示例
+[%collapsible]
+====
+[source, yaml]
+----
+version: 1
+storageDriverName: ontap-san-economy
+managementLIF: 10.0.0.1
+svm: svm_iscsi_eco
+username: vsadmin
+password: <password>
+----
+====
+.基于证书的身份验证示例
+[%collapsible]
+====
+在这个基本配置示例中 `clientCertificate`， `clientPrivateKey` ， 和 `trustedCACertificate`（如果使用受信任的 CA，则为可选） `backend.json`分别取客户端证书、私钥和受信任 CA 证书的 base64 编码值。
+
+[source, yaml]
+----
+---
+version: 1
+storageDriverName: ontap-san
+backendName: DefaultSANBackend
+managementLIF: 10.0.0.1
+svm: svm_iscsi
+useCHAP: true
+chapInitiatorSecret: cl9qxIm36DKyawxy
+chapTargetInitiatorSecret: rqxigXgkesIpwxyz
+chapTargetUsername: iJF4heBRT0TCwxyz
+chapUsername: uh2aNCLSd6cNwxyz
+clientCertificate: ZXR0ZXJwYXB...ICMgJ3BhcGVyc2
+clientPrivateKey: vciwKIyAgZG...0cnksIGRlc2NyaX
+trustedCACertificate: zcyBbaG...b3Igb3duIGNsYXNz
+----
+====
+.双向 CHAP 示例
+[%collapsible]
+====
+这些示例创建了一个后端。 `useCHAP`设置为 `true`。
+
+.ONTAP SAN CHAP 示例
+[source, yaml]
+----
+---
+version: 1
+storageDriverName: ontap-san
+managementLIF: 10.0.0.1
+svm: svm_iscsi
+labels:
+  k8scluster: test-cluster-1
+  backend: testcluster1-sanbackend
+useCHAP: true
+chapInitiatorSecret: cl9qxIm36DKyawxy
+chapTargetInitiatorSecret: rqxigXgkesIpwxyz
+chapTargetUsername: iJF4heBRT0TCwxyz
+chapUsername: uh2aNCLSd6cNwxyz
+username: vsadmin
+password: <password>
+----
+.ONTAP SAN 经济 CHAP 示例
+[source, yaml]
+----
+---
+version: 1
+storageDriverName: ontap-san-economy
+managementLIF: 10.0.0.1
+svm: svm_iscsi_eco
+useCHAP: true
+chapInitiatorSecret: cl9qxIm36DKyawxy
+chapTargetInitiatorSecret: rqxigXgkesIpwxyz
+chapTargetUsername: iJF4heBRT0TCwxyz
+chapUsername: uh2aNCLSd6cNwxyz
+username: vsadmin
+password: <password>
+----
+====
+.NVMe/TCP 示例
+[%collapsible]
+====
+您的ONTAP后端必须配置有使用 NVMe 的 SVM。这是 NVMe/TCP 的基本后端配置。
+
+[source, yaml]
+----
+---
+version: 1
+backendName: NVMeBackend
+storageDriverName: ontap-san
+managementLIF: 10.0.0.1
+svm: svm_nvme
+username: vsadmin
+password: password
+sanType: nvme
+useREST: true
+----
+====
+.SCSI over FC (FCP) 示例
+[%collapsible]
+====
+您的ONTAP后端必须配置有 FC 的 SVM。这是 FC 的基本后端配置。
+
+[source, yaml]
+----
+---
+version: 1
+backendName: fcp-backend
+storageDriverName: ontap-san
+managementLIF: 10.0.0.1
+svm: svm_fc
+username: vsadmin
+password: password
+sanType: fcp
+useREST: true
+----
+====
+.使用 nameTemplate 的后端配置示例
+[%collapsible]
+====
+[source, yaml]
+----
+---
+version: 1
+storageDriverName: ontap-san
+backendName: ontap-san-backend
+managementLIF: <ip address>
+svm: svm0
+username: <admin>
+password: <password>
+defaults:
+  nameTemplate: "{{.volume.Name}}_{{.labels.cluster}}_{{.volume.Namespace}}_{{.vo\
+    lume.RequestName}}"
+labels:
+  cluster: ClusterA
+  PVC: "{{.volume.Namespace}}_{{.volume.RequestName}}"
+----
+====
+.ontap-san-economy 驱动程序的 formatOptions 示例
+[%collapsible]
+====
+[source, yaml]
+----
+---
+version: 1
+storageDriverName: ontap-san-economy
+managementLIF: ""
+svm: svm1
+username: ""
+password: "!"
+storagePrefix: whelk_
+debugTraceFlags:
+  method: true
+  api: true
+defaults:
+  formatOptions: -E nodiscard
+----
+====
+
+
+== 具有虚拟池的后端示例
+
+在这些示例后端定义文件中，所有存储池都设置了特定的默认值，例如： `spaceReserve`没有， `spaceAllocation`为假，并且 `encryption`为假。虚拟池在存储部分中定义。
+
+Trident在“备注”字段中设置配置标签。在FlexVol volume上设置注释。Trident 在配置时Trident虚拟池上存在的所有标签复制到存储卷。为了方便起见，存储管理员可以为每个虚拟池定义标签，并按标签对卷进行分组。
+
+在这些示例中，一些存储池会设置自己的参数。 `spaceReserve` ， `spaceAllocation` ， 和 `encryption`有些值会覆盖默认值，有些池会覆盖默认值。
+
+.ONTAP SAN 示例
+[%collapsible]
+====
+[source, yaml]
+----
+---
+version: 1
+storageDriverName: ontap-san
+managementLIF: 10.0.0.1
+svm: svm_iscsi
+useCHAP: true
+chapInitiatorSecret: cl9qxIm36DKyawxy
+chapTargetInitiatorSecret: rqxigXgkesIpwxyz
+chapTargetUsername: iJF4heBRT0TCwxyz
+chapUsername: uh2aNCLSd6cNwxyz
+username: vsadmin
+password: <password>
+defaults:
+  spaceAllocation: "false"
+  encryption: "false"
+  qosPolicy: standard
+labels:
+  store: san_store
+  kubernetes-cluster: prod-cluster-1
+region: us_east_1
+storage:
+  - labels:
+      protection: gold
+      creditpoints: "40000"
+    zone: us_east_1a
+    defaults:
+      spaceAllocation: "true"
+      encryption: "true"
+      adaptiveQosPolicy: adaptive-extreme
+  - labels:
+      protection: silver
+      creditpoints: "20000"
+    zone: us_east_1b
+    defaults:
+      spaceAllocation: "false"
+      encryption: "true"
+      qosPolicy: premium
+  - labels:
+      protection: bronze
+      creditpoints: "5000"
+    zone: us_east_1c
+    defaults:
+      spaceAllocation: "true"
+      encryption: "false"
+
+----
+====
+.ONTAP SAN 经济示例
+[%collapsible]
+====
+[source, yaml]
+----
+---
+version: 1
+storageDriverName: ontap-san-economy
+managementLIF: 10.0.0.1
+svm: svm_iscsi_eco
+useCHAP: true
+chapInitiatorSecret: cl9qxIm36DKyawxy
+chapTargetInitiatorSecret: rqxigXgkesIpwxyz
+chapTargetUsername: iJF4heBRT0TCwxyz
+chapUsername: uh2aNCLSd6cNwxyz
+username: vsadmin
+password: <password>
+defaults:
+  spaceAllocation: "false"
+  encryption: "false"
+labels:
+  store: san_economy_store
+region: us_east_1
+storage:
+  - labels:
+      app: oracledb
+      cost: "30"
+    zone: us_east_1a
+    defaults:
+      spaceAllocation: "true"
+      encryption: "true"
+  - labels:
+      app: postgresdb
+      cost: "20"
+    zone: us_east_1b
+    defaults:
+      spaceAllocation: "false"
+      encryption: "true"
+  - labels:
+      app: mysqldb
+      cost: "10"
+    zone: us_east_1c
+    defaults:
+      spaceAllocation: "true"
+      encryption: "false"
+  - labels:
+      department: legal
+      creditpoints: "5000"
+    zone: us_east_1c
+    defaults:
+      spaceAllocation: "true"
+      encryption: "false"
+
+----
+====
+.NVMe/TCP 示例
+[%collapsible]
+====
+[source, yaml]
+----
+---
+version: 1
+storageDriverName: ontap-san
+sanType: nvme
+managementLIF: 10.0.0.1
+svm: nvme_svm
+username: vsadmin
+password: <password>
+useREST: true
+defaults:
+  spaceAllocation: "false"
+  encryption: "true"
+storage:
+  - labels:
+      app: testApp
+      cost: "20"
+    defaults:
+      spaceAllocation: "false"
+      encryption: "false"
+
+----
+====
+
+
+== 将后端映射到存储类
+
+以下 StorageClass 定义指的是<<具有虚拟池的后端示例>>。使用 `parameters.selector`字段中，每个 StorageClass 都会指出哪些虚拟池可用于托管卷。卷将具有所选虚拟池中定义的各个方面。
+
+* 这 `protection-gold`StorageClass 将映射到第一个虚拟池。 `ontap-san`后端。这是唯一提供黄金级保护的泳池。
++
+[source, yaml]
+----
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: protection-gold
+provisioner: csi.trident.netapp.io
+parameters:
+  selector: "protection=gold"
+  fsType: "ext4"
+----
+* 这 `protection-not-gold`StorageClass 将映射到第二个和第三个虚拟池。 `ontap-san`后端。除了黄金级别之外，只有这些金池提供其他级别的保护。
++
+[source, yaml]
+----
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: protection-not-gold
+provisioner: csi.trident.netapp.io
+parameters:
+  selector: "protection!=gold"
+  fsType: "ext4"
+----
+* 这 `app-mysqldb`StorageClass 将映射到第三个虚拟池 `ontap-san-economy`后端。这是唯一一个为mysqldb类型应用程序提供存储池配置的存储池。
++
+[source, yaml]
+----
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: app-mysqldb
+provisioner: csi.trident.netapp.io
+parameters:
+  selector: "app=mysqldb"
+  fsType: "ext4"
+----
+* 这 `protection-silver-creditpoints-20k`StorageClass 将映射到第二个虚拟池 `ontap-san`后端。这是唯一提供银级保护和 20000 积分的彩池。
++
+[source, yaml]
+----
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: protection-silver-creditpoints-20k
+provisioner: csi.trident.netapp.io
+parameters:
+  selector: "protection=silver; creditpoints=20000"
+  fsType: "ext4"
+----
+* 这 `creditpoints-5k`StorageClass 将映射到第三个虚拟池 `ontap-san`后端和第四个虚拟池 `ontap-san-economy`后端。这是唯一提供 5000 积分的彩池产品。
++
+[source, yaml]
+----
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: creditpoints-5k
+provisioner: csi.trident.netapp.io
+parameters:
+  selector: "creditpoints=5000"
+  fsType: "ext4"
+----
+* 这 `my-test-app-sc`StorageClass 将映射到 `testAPP`虚拟池 `ontap-san`司机 `sanType: nvme`。这是唯一一家提供泳池的公司 `testApp`。
++
+[source, yaml]
+----
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: my-test-app-sc
+provisioner: csi.trident.netapp.io
+parameters:
+  selector: "app=testApp"
+  fsType: "ext4"
+----
+
+
+Trident将决定选择哪个虚拟池，并确保满足存储需求。

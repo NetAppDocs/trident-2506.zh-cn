@@ -1,0 +1,175 @@
+---
+sidebar: sidebar 
+permalink: trident-use/volume-share.html 
+keywords: volref, volume reference, share, pvc, pv, nfs, namespace, cvna, cross-namespace, sharing 
+summary: 使用Trident，您可以在主命名空间中创建卷，并在一个或多个辅助命名空间中共享该卷。 
+---
+= 跨命名空间共享 NFS 卷
+:hardbreaks:
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+使用Trident，您可以在主命名空间中创建卷，并在一个或多个辅助命名空间中共享该卷。
+
+
+
+== 功能
+
+TridentVolumeReference CR 允许您在一个或多个 Kubernetes 命名空间之间安全地共享 ReadWriteMany (RWX) NFS 卷。这种 Kubernetes 原生解决方案具有以下优点：
+
+* 多级访问控制以确保安全性
+* 适用于所有Trident NFS 卷驱动程序
+* 不依赖 tridentctl 或任何其他非原生 Kubernetes 功能
+
+
+此图展示了跨两个 Kubernetes 命名空间的 NFS 卷共享。
+
+image::cross-namespace-sharing.png[跨命名空间共享的概念图。]
+
+
+
+== 快速启动
+
+只需几个步骤即可设置NFS卷共享。
+
+.image:https://raw.githubusercontent.com/NetAppDocs/common/main/media/number-1.png["一个"]配置源PVC以共享体积
+[role="quick-margin-para"]
+源命名空间所有者授予访问源 PVC 中数据的权限。
+
+.image:https://raw.githubusercontent.com/NetAppDocs/common/main/media/number-2.png["两个"]授予在目标命名空间中创建 CR 的权限
+[role="quick-margin-para"]
+集群管理员授予目标命名空间的所有者创建 TridentVolumeReference CR 的权限。
+
+.image:https://raw.githubusercontent.com/NetAppDocs/common/main/media/number-3.png["三"]在目标命名空间中创建 TridentVolumeReference
+[role="quick-margin-para"]
+目标命名空间的所有者创建 TridentVolumeReference CR 以引用源 PVC。
+
+.image:https://raw.githubusercontent.com/NetAppDocs/common/main/media/number-4.png["四个"]在目标命名空间中创建从属 PVC
+[role="quick-margin-para"]
+目标命名空间的所有者创建从属 PVC，以使用源 PVC 中的数据源。
+
+
+
+== 配置源命名空间和目标命名空间
+
+为确保安全，跨命名空间共享需要源命名空间所有者、集群管理员和目标命名空间所有者的协作和行动。用户角色在每个步骤中都会被指定。
+
+.步骤
+. *源命名空间所有者：* 创建PVC(`pvc1` ）在源命名空间中，授予与目标命名空间共享的权限(`namespace2`) 使用 `shareToNamespace`注解。
++
+[source, yaml]
+----
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: pvc1
+  namespace: namespace1
+  annotations:
+    trident.netapp.io/shareToNamespace: namespace2
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: trident-csi
+  resources:
+    requests:
+      storage: 100Gi
+----
++
+Trident创建 PV 及其后端 NFS 存储卷。
+
++
+[NOTE]
+====
+** 您可以使用逗号分隔的列表将 PVC 共享给多个命名空间。例如， `trident.netapp.io/shareToNamespace: namespace2,namespace3,namespace4` 。
+** 您可以使用以下方式共享到所有命名空间 `*`。例如， `trident.netapp.io/shareToNamespace: *`
+** 您可以更新PVC以包含 `shareToNamespace`随时可以添加注释。
+
+
+====
+. *集群管理员：*确保已建立适当的 RBAC，以授予目标命名空间所有者在目标命名空间中创建 TridentVolumeReference CR 的权限。
+. *目标命名空间所有者：* 在目标命名空间中创建一个指向源命名空间的 TridentVolumeReference CR。 `pvc1` 。
++
+[source, yaml]
+----
+apiVersion: trident.netapp.io/v1
+kind: TridentVolumeReference
+metadata:
+  name: my-first-tvr
+  namespace: namespace2
+spec:
+  pvcName: pvc1
+  pvcNamespace: namespace1
+----
+. *目标命名空间所有者：* 创建PVC(`pvc2` ）在目标命名空间(`namespace2`) 使用 `shareFromPVC`注释以指定来源 PVC。
++
+[source, yaml]
+----
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  annotations:
+    trident.netapp.io/shareFromPVC: namespace1/pvc1
+  name: pvc2
+  namespace: namespace2
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: trident-csi
+  resources:
+    requests:
+      storage: 100Gi
+----
++
+
+NOTE: 目标PVC管的尺寸必须小于或等于源PVC管的尺寸。
+
+
+
+.结果
+Trident读取 `shareFromPVC`在目标 PVC 上添加注释，并将目标 PV 创建为没有自身存储资源的从属卷，该卷指向源 PV 并共享源 PV 存储资源。目的地 PVC 和 PV 看起来已正常绑定。
+
+
+
+== 删除共享卷
+
+您可以删除跨多个命名空间共享的卷。 Trident将移除对源命名空间中该卷的访问权限，并保留对共享该卷的其他命名空间的访问权限。当所有引用该卷的命名空间都被删除后， Trident会删除该卷。
+
+
+
+== 使用 `tridentctl get`查询子卷
+
+使用[`tridentctl`实用程序，您可以运行 `get`获取子卷的命令。更多信息，请参阅链接：../trident-reference/tridentctl.html[`tridentctl`命令和选项]。
+
+[listing]
+----
+Usage:
+  tridentctl get [option]
+----
+标志：
+
+* ``-h, --help`：有关卷的帮助。
+* `--parentOfSubordinate string`：将查询限制在子源卷上。
+* `--subordinateOf string`：将查询限制在卷的下级。
+
+
+
+
+== 限制
+
+* Trident无法阻止目标命名空间写入共享卷。您应该使用文件锁定或其他方法来防止覆盖共享卷数据。
+* 您无法通过移除源PVC来撤销对源PVC的访问权限。 `shareToNamespace`或者 `shareFromNamespace`注释或删除 `TridentVolumeReference`CR。要撤销访问权限，必须删除从属 PVC。
+* 从属卷无法进行快照、克隆和镜像操作。
+
+
+
+
+== 了解更多信息
+
+要了解有关跨命名空间卷访问的更多信息：
+
+* 访问link:https://cloud.netapp.com/blog/astra-blg-sharing-volumes-between-namespaces-say-hello-to-cross-namespace-volume-access["在命名空间之间共享卷：迎接跨命名空间卷访问"^]。
+* 观看演示link:https://media.netapp.com/page/9071d19d-1438-5ed3-a7aa-ea4d73c28b7f/solutions-products["NetAppTV"^]。
+

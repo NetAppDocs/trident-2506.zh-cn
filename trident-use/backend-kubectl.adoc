@@ -1,0 +1,304 @@
+---
+sidebar: sidebar 
+permalink: trident-use/backend-kubectl.html 
+keywords: backends, storage system, anf, cvs for gcp, element, hci, solidfire, ontap, aff, fas, ontap select, configure backends, kubectl, create backends 
+summary: '后端定义了Trident与存储系统之间的关系。它告诉Trident如何与该存储系统通信，以及Trident应该如何从中配置卷。 Trident安装完成后，下一步是创建后端。这 `TridentBackendConfig`自定义资源定义 (CRD) 使您能够通过 Kubernetes 界面直接创建和管理Trident后端。您可以使用 `kubectl`或者适用于您的 Kubernetes 发行版的等效 CLI 工具。' 
+---
+= 使用 kubectl 创建后端
+:hardbreaks:
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+后端定义了Trident与存储系统之间的关系。它告诉Trident如何与该存储系统通信，以及Trident应该如何从中配置卷。 Trident安装完成后，下一步是创建后端。这 `TridentBackendConfig`自定义资源定义 (CRD) 使您能够通过 Kubernetes 界面直接创建和管理Trident后端。您可以使用 `kubectl`或者适用于您的 Kubernetes 发行版的等效 CLI 工具。
+
+
+
+== `TridentBackendConfig`
+
+`TridentBackendConfig` (`tbc`， `tbconfig` ， `tbackendconfig` ) 是一个前端、命名空间 CRD，使您能够使用 来管理Trident后端 `kubectl`。现在，Kubernetes 和存储管理员可以直接通过 Kubernetes CLI 创建和管理后端，而无需使用专门的命令行实用程序。(`tridentctl` ）。
+
+在创建之后 `TridentBackendConfig`对于该对象，会发生以下情况：
+
+* Trident会根据您提供的配置自动创建后端。这在内部表示为 `TridentBackend` (`tbe`， `tridentbackend` ）CR。
+* 这 `TridentBackendConfig`与……有着独特的联系 `TridentBackend`这是由Trident生产的。
+
+
+每个 `TridentBackendConfig`与……保持一对一映射关系 `TridentBackend`前者是提供给用户设计和配置后端的界面；后者是Trident表示实际后端对象的方式。
+
+
+WARNING: `TridentBackend`CR 由Trident自动创建。你*不应该*修改它们。如果您想对后端进行更新，请通过修改以下文件来实现： `TridentBackendConfig`目的。
+
+以下示例展示了格式： `TridentBackendConfig` CR：
+
+[source, yaml]
+----
+apiVersion: trident.netapp.io/v1
+kind: TridentBackendConfig
+metadata:
+  name: backend-tbc-ontap-san
+spec:
+  version: 1
+  backendName: ontap-san-backend
+  storageDriverName: ontap-san
+  managementLIF: 10.0.0.1
+  dataLIF: 10.0.0.2
+  svm: trident_svm
+  credentials:
+    name: backend-tbc-ontap-san-secret
+----
+您还可以查看以下示例： https://github.com/NetApp/trident/tree/stable/v21.07/trident-installer/sample-input/backends-samples["trident-installer"^]包含所需存储平台/服务的示例配置的目录。
+
+这 `spec`接受后端特定的配置参数。在这个例子中，后端使用了 `ontap-san`存储驱动程序，并使用此处表格中列出的配置参数。有关所需存储驱动程序的配置选项列表，请参阅link:backends.html["存储驱动程序的后端配置信息"^]。
+
+这 `spec`本节还包括 `credentials`和 `deletionPolicy`这些字段是新引入的 `TridentBackendConfig`CR：
+
+* `credentials`此参数为必填字段，包含用于向存储系统/服务进行身份验证的凭据。这设置为用户创建的 Kubernetes Secret。凭据不能以明文形式传递，否则将导致错误。
+* `deletionPolicy`此字段定义了当……时应该发生的情况 `TridentBackendConfig`被删除。它可以取以下两个值之一：
++
+** `delete`这会导致两者被删除。 `TridentBackendConfig` CR及其相关后端。这是默认值。
+**  `retain`当 `TridentBackendConfig`CR 被删除后，后端定义仍然存在，并且可以通过以下方式进行管理： `tridentctl` 。将删除策略设置为 `retain`允许用户降级到早期版本（21.04 之前），并保留已创建的后端。该字段的值可以在之后更新 `TridentBackendConfig`已创建。
+
+
+
+
+
+NOTE: 后端名称是通过以下方式设置的： `spec.backendName` 。如果未指定，则后端名称设置为……的名称 `TridentBackendConfig`对象（metadata.name）。建议使用显式方式设置后端名称。 `spec.backendName` 。
+
+
+TIP: 用以下方式创建的后端 `tridentctl`没有关联的 `TridentBackendConfig`目的。您可以选择使用以下方式管理此类后端 `kubectl`通过创建一个 `TridentBackendConfig`CR。必须注意指定完全相同的配置参数（例如： `spec.backendName` ， `spec.storagePrefix` ， `spec.storageDriverName` ， 等等）。  Trident将自动绑定新创建的 `TridentBackendConfig`利用现有的后端。
+
+
+
+== 步骤概述
+
+使用以下方式创建新的后端 `kubectl`你应该这样做：
+
+. 创建一个 https://kubernetes.io/docs/concepts/configuration/secret/["Kubernetes Secret"^]该密钥包含Trident与存储集群/服务通信所需的凭据。
+. 创建一个 `TridentBackendConfig`目的。这包含有关存储集群/服务的具体信息，并引用上一步中创建的密钥。
+
+
+创建后端后，您可以使用以下方式观察其状态 `kubectl get tbc <tbc-name> -n <trident-namespace>`并收集更多细节信息。
+
+
+
+== 步骤 1：创建 Kubernetes Secret
+
+创建一个包含后端访问凭据的密钥。这是每个存储服务/平台独有的。以下是一个例子：
+
+[listing]
+----
+kubectl -n trident create -f backend-tbc-ontap-san-secret.yaml
+----
+[source, yaml]
+----
+apiVersion: v1
+kind: Secret
+metadata:
+  name: backend-tbc-ontap-san-secret
+type: Opaque
+stringData:
+  username: cluster-admin
+  password: password
+----
+下表总结了每个存储平台密钥中必须包含的字段：
+
+[cols="3"]
+|===
+| 存储平台密钥字段描述 | 秘密 | 字段描述 
+
+
+| Azure NetApp Files  a| 
+客户端ID
+ a| 
+应用注册中的客户端 ID
+
+
+
+| Cloud Volumes Service for GCP  a| 
+私钥 ID
+ a| 
+私钥的ID。具有 CVS 管理员角色的 GCP 服务帐户的部分 API 密钥
+
+
+
+| Cloud Volumes Service for GCP  a| 
+私钥
+ a| 
+私钥。具有 CVS 管理员角色的 GCP 服务帐户的部分 API 密钥
+
+
+
+| 元素（NetApp HCI/ SolidFire）  a| 
+端点
+ a| 
+针对SolidFire集群的 MVIP，包含租户凭证
+
+
+
+| ONTAP  a| 
+用户名
+ a| 
+用于连接到集群/SVM 的用户名。用于基于凭证的身份验证
+
+
+
+| ONTAP  a| 
+password
+ a| 
+连接到集群/SVM 的密码。用于基于凭证的身份验证
+
+
+
+| ONTAP  a| 
+客户端私钥
+ a| 
+客户端私钥的 Base64 编码值。用于基于证书的身份验证
+
+
+
+| ONTAP  a| 
+chap用户名
+ a| 
+入站用户名。如果 useCHAP=true，则为必填项。为了 `ontap-san`和 `ontap-san-economy`
+
+
+
+| ONTAP  a| 
+chapInitiatorSecret
+ a| 
+CHAP 发起者密钥。如果 useCHAP=true，则此项为必填项。为了 `ontap-san`和 `ontap-san-economy`
+
+
+
+| ONTAP  a| 
+chapTargetUsername
+ a| 
+目标用户名。如果 useCHAP=true，则此项为必填项。为了 `ontap-san`和 `ontap-san-economy`
+
+
+
+| ONTAP  a| 
+chapTargetInitiatorSecret
+ a| 
+CHAP 目标发起者密钥。如果 useCHAP=true，则此项为必填项。为了 `ontap-san`和 `ontap-san-economy`
+
+|===
+此步骤中创建的秘密将在以下位置引用： `spec.credentials`领域的 `TridentBackendConfig`在下一步创建的对象。
+
+
+
+== 步骤 2：创建 `TridentBackendConfig`CR
+
+您现在可以开始创建您的 `TridentBackendConfig`CR。在这个例子中，后端使用了 `ontap-san`驱动程序是通过使用以下方式创建的： `TridentBackendConfig`下图所示物体：
+
+[listing]
+----
+kubectl -n trident create -f backend-tbc-ontap-san.yaml
+----
+[source, yaml]
+----
+apiVersion: trident.netapp.io/v1
+kind: TridentBackendConfig
+metadata:
+  name: backend-tbc-ontap-san
+spec:
+  version: 1
+  backendName: ontap-san-backend
+  storageDriverName: ontap-san
+  managementLIF: 10.0.0.1
+  dataLIF: 10.0.0.2
+  svm: trident_svm
+  credentials:
+    name: backend-tbc-ontap-san-secret
+----
+
+
+== 步骤 3：验证状态 `TridentBackendConfig`CR
+
+现在你已经创建了 `TridentBackendConfig`CR，您可以核实状态。请参见以下示例：
+
+[listing]
+----
+kubectl -n trident get tbc backend-tbc-ontap-san
+NAME                    BACKEND NAME          BACKEND UUID                           PHASE   STATUS
+backend-tbc-ontap-san   ontap-san-backend     8d24fce7-6f60-4d4a-8ef6-bab2699e6ab8   Bound   Success
+----
+后端已成功创建并绑定到 `TridentBackendConfig`CR。
+
+相位可以取以下值之一：
+
+* `Bound`： 这 `TridentBackendConfig`CR 与后端关联，该后端包含 `configRef`设置为 `TridentBackendConfig`CR 的 uid。
+* `Unbound`：用以下方式表示 `""`。这 `TridentBackendConfig`该对象未绑定到后端。所有新创建 `TridentBackendConfig`CR 默认处于此阶段。阶段变化后，它无法再恢复到未绑定状态。
+* `Deleting`： 这 `TridentBackendConfig`CR的 `deletionPolicy`已设置为删除。当 `TridentBackendConfig`CR 被删除后，状态变为正在删除。
++
+** 如果后端不存在持久卷声明 (PVC)，则删除 `TridentBackendConfig`这将导致Trident删除后端以及 `TridentBackendConfig`CR。
+** 如果后端存在一个或多个 PVC，则进入删除状态。这 `TridentBackendConfig`CR随后也进入删除阶段。后端和 `TridentBackendConfig`只有在所有 PVC 都被删除后才会删除。
+
+
+* `Lost`与后端相关的 `TridentBackendConfig`CR 被意外或故意删除，并且 `TridentBackendConfig`CR 仍然保留着对已删除后端的引用。这 `TridentBackendConfig`无论如何，CR 仍然可以被删除。 `deletionPolicy`价值。
+* `Unknown`Trident无法确定与以下系统关联的后端的状态或是否存在： `TridentBackendConfig` CR。例如，如果 API 服务器没有响应，或者如果 `tridentbackends.trident.netapp.io`CRD 缺失。这可能需要干预。
+
+
+至此，后端已成功创建！此外，还可以处理以下几种操作：link:backend_ops_kubectl.html["后端更新和后端删除"^] 。
+
+
+
+== （可选）步骤 4：了解更多详情
+
+您可以运行以下命令来获取有关后端的更多信息：
+
+[listing]
+----
+kubectl -n trident get tbc backend-tbc-ontap-san -o wide
+----
+[listing]
+----
+NAME                    BACKEND NAME        BACKEND UUID                           PHASE   STATUS    STORAGE DRIVER   DELETION POLICY
+backend-tbc-ontap-san   ontap-san-backend   8d24fce7-6f60-4d4a-8ef6-bab2699e6ab8   Bound   Success   ontap-san        delete
+----
+此外，您还可以获取 YAML/JSON 转储文件。 `TridentBackendConfig` 。
+
+[listing]
+----
+kubectl -n trident get tbc backend-tbc-ontap-san -o yaml
+----
+[source, yaml]
+----
+apiVersion: trident.netapp.io/v1
+kind: TridentBackendConfig
+metadata:
+  creationTimestamp: 2021-04-21T20:45:11Z
+  finalizers:
+    - trident.netapp.io
+  generation: 1
+  name: backend-tbc-ontap-san
+  namespace: trident
+  resourceVersion: "947143"
+  uid: 35b9d777-109f-43d5-8077-c74a4559d09c
+spec:
+  backendName: ontap-san-backend
+  credentials:
+    name: backend-tbc-ontap-san-secret
+  managementLIF: 10.0.0.1
+  dataLIF: 10.0.0.2
+  storageDriverName: ontap-san
+  svm: trident_svm
+  version: 1
+status:
+  backendInfo:
+    backendName: ontap-san-backend
+    backendUUID: 8d24fce7-6f60-4d4a-8ef6-bab2699e6ab8
+  deletionPolicy: delete
+  lastOperationStatus: Success
+  message: Backend 'ontap-san-backend' created
+  phase: Bound
+----
+`backendInfo`包含 `backendName`以及 `backendUUID`后端是根据以下情况创建的： `TridentBackendConfig` CR。这 `lastOperationStatus`该字段表示上次操作的状态 `TridentBackendConfig`CR（变更请求）可以由用户触发（例如，用户更改了某些内容）。 `spec` ）或由Trident触发（例如，在Trident重启期间）。结果要么是成功，要么是失败。 `phase`代表了以下关系的状态： `TridentBackendConfig` CR 和后端。在上面的例子中， `phase`具有 Bound 值，这意味着 `TridentBackendConfig`CR与后端相关。
+
+您可以运行 `kubectl -n trident describe tbc <tbc-cr-name>`获取事件日志详细信息的命令。
+
+
+WARNING: 您无法更新或删除包含关联后端的后端。 `TridentBackendConfig`使用对象 `tridentctl`。要了解在以下两者之间切换所涉及的步骤： `tridentctl`和 `TridentBackendConfig`，link:backend_options.html["参见此处"^] 。

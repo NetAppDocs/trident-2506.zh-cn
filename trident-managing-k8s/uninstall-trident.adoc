@@ -1,0 +1,100 @@
+---
+sidebar: sidebar 
+permalink: trident-managing-k8s/uninstall-trident.html 
+keywords: uninstall, Trident, methods, operator, tridentctl, helm, downgrade, obliviate, crds, wipeout, downgrade 
+summary: 卸载Trident时，应使用与安装Trident时相同的方法。如果升级后发现错误、依赖项问题或升级不成功或不完整，需要进行修复，则应卸载Trident并按照该版本的具体说明重新安装早期版本。 
+---
+= 卸载Trident
+:hardbreaks:
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+卸载Trident时，应使用与安装Trident时相同的方法。
+
+.关于此任务
+* 如果升级后出现错误、依赖项问题或升级失败/不完整，需要修复，则应卸载Trident并按照相应的说明重新安装早期版本。link:../earlier-versions.html["version"] 。这是降级到早期版本的唯一推荐方法。
+* 为了方便升级和重新安装，卸载Trident不会删除Trident创建的 CRD 或相关对象。如果您需要彻底删除Trident及其所有数据，请参阅以下内容：link:../troubleshooting.html#completely-remove-trident-and-crds["彻底移除Trident和CRDs"] 。
+
+
+.开始之前
+如果您要停用 Kubernetes 集群，则必须先删除所有使用Trident创建的卷的应用程序，然后再卸载。这样可以确保在 Kubernetes 节点上删除 PVC 之前，PVC 会被取消发布。
+
+
+
+== 确定原始安装方法
+
+卸载Trident时，应使用与安装 Trident 时相同的方法。卸载前，请确认您最初安装Trident时使用的版本。
+
+. 使用 `kubectl get pods -n trident`检查豆荚。
++
+** 如果没有操作员舱，Trident是通过以下方式安装的： `tridentctl` 。
+** 如果存在 operator pod，则Trident是通过Trident operator 手动安装的，或者使用 Helm 安装的。
+
+
+. 如果有操作员舱，请使用 `kubectl describe tproc trident`确定Trident是否使用 Helm 安装。
++
+** 如果存在 Helm 标签，则表示Trident是使用 Helm 安装的。
+** 如果没有 Helm 标签，则表示Trident是使用Trident操作员手动安装的。
+
+
+
+
+
+
+== 卸载Trident操作员安装程序
+
+您可以手动卸载 Trident Operator 安装，也可以使用 Helm 卸载。
+
+
+
+=== 手动卸载
+
+如果您使用操作员安装了Trident ，则可以通过执行以下操作之一来卸载它：
+
+. **编辑 `TridentOrchestrator`CR 并设置卸载标志**：
++
+[listing]
+----
+kubectl patch torc <trident-orchestrator-name> --type=merge -p '{"spec":{"uninstall":true}}'
+----
++
+当 `uninstall`标志位已设置为 `true`Trident操作符会卸载Trident，但不会移除 TridentOrchestrator 本身。如果您想再次安装Trident，则应该清理 TridentOrchestrator 并创建一个新的。
+
+. **删除 `TridentOrchestrator`**：通过移除 `TridentOrchestrator`如果 CR 用于部署Trident，则指示操作员卸载Trident。操作员处理移除操作 `TridentOrchestrator`然后继续移除Trident部署和守护进程集，并删除安装过程中创建的Trident pod。
++
+[listing]
+----
+kubectl delete -f deploy/<bundle.yaml> -n <namespace>
+----
+
+
+
+
+=== 卸载 Helm 安装
+
+如果您使用 Helm 安装了Trident ，则可以使用以下命令卸载它： `helm uninstall` 。
+
+[listing]
+----
+#List the Helm release corresponding to the Trident install.
+helm ls -n trident
+NAME          NAMESPACE       REVISION        UPDATED                                 STATUS          CHART                           APP VERSION
+trident       trident         1               2021-04-20 00:26:42.417764794 +0000 UTC deployed        trident-operator-21.07.1        21.07.1
+
+#Uninstall Helm release to remove Trident
+helm uninstall trident -n trident
+release "trident" uninstalled
+----
+
+
+== 卸载 `tridentctl`安装
+
+使用 `uninstall`命令 `tridentctl`移除与Trident关联的所有资源，但保留 CRD 及其相关对象：
+
+[listing]
+----
+./tridentctl uninstall -n <namespace>
+----

@@ -1,0 +1,339 @@
+---
+sidebar: sidebar 
+permalink: trident-use/ontap-san-prep.html 
+keywords: trident backend, ontap san, ontap-san, ontap-san-economy, fcp, asa r2, iscsi, nvme/tcp 
+summary: 了解如何准备配置带有ONTAP SAN 驱动程序的ONTAP后端。 
+---
+= 准备配置后端ONTAP SAN 驱动程序
+:hardbreaks:
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+了解配置ONTAP后端和ONTAP SAN 驱动程序的要求和身份验证选项。
+
+
+
+== 要求
+
+对于所有ONTAP后端， Trident要求至少将一个聚合分配给 SVM。
+
+
+NOTE: link:https://docs.netapp.com/us-en/asa-r2/get-started/learn-about.html["ASA r2 系统"^]与其他ONTAP系统（ASA、 AFF和FAS）在存储层的实现上有所不同。在ASA r2 系统中，使用存储可用区而不是聚合。请参阅link:https://kb.netapp.com/on-prem/ASAr2/ASAr2_KBs/su_create_by_SVM_admin_using_CLI_fails_with_error_No_candidate_aggregates_are_available_for_storage_services["这"^]知识库文章，介绍如何在ASA r2 系统中将聚合分配给 SVM。
+
+请记住，您还可以运行多个驱动程序，并创建指向其中一个或另一个驱动程序的存储类。例如，您可以配置一个 `san-dev`使用类 `ontap-san`司机和 `san-default`使用类 `ontap-san-economy`一。
+
+所有 Kubernetes 工作节点都必须安装相应的 iSCSI 工具。参考 link:worker-node-prep.html["准备工作节点"] 了解详情。
+
+
+
+== 对ONTAP后端进行身份验证
+
+Trident提供两种ONTAP后端身份验证方式。
+
+* 基于凭证：具有所需权限的ONTAP用户的用户名和密码。建议使用预定义的安全登录角色，例如： `admin`或者 `vsadmin`确保与ONTAP版本最大程度兼容。
+* 基于证书： Trident还可以使用安装在后端的证书与ONTAP集群通信。此处，后端定义必须包含客户端证书、密钥和受信任 CA 证书（如果使用，建议使用）的 Base64 编码值。
+
+
+您可以更新现有后端，以在基于凭据的方法和基于证书的方法之间进行切换。但是，一次只能支持一种身份验证方法。要切换到不同的身份验证方法，必须从后端配置中删除现有方法。
+
+
+WARNING: 如果您尝试同时提供凭据和证书，则后端创建将失败，并出现错误，提示配置文件中提供了多个身份验证方法。
+
+
+
+=== 启用基于凭据的身份验证
+
+Trident需要 SVM 范围/集群范围管理员的凭据才能与ONTAP后端通信。建议使用标准的、预定义的角色，例如： `admin`或者 `vsadmin`。这样可以确保与未来ONTAP版本向前兼容，这些版本可能会公开一些功能 API，供未来的Trident版本使用。虽然可以创建自定义安全登录角色并将其与Trident一起使用，但不建议这样做。
+
+后端定义示例如下所示：
+
+[role="tabbed-block"]
+====
+.YAML
+--
+[source, yaml]
+----
+---
+version: 1
+backendName: ExampleBackend
+storageDriverName: ontap-san
+managementLIF: 10.0.0.1
+svm: svm_nfs
+username: vsadmin
+password: password
+----
+--
+.JSON
+--
+[source, json]
+----
+{
+  "version": 1,
+  "backendName": "ExampleBackend",
+  "storageDriverName": "ontap-san",
+  "managementLIF": "10.0.0.1",
+  "svm": "svm_nfs",
+  "username": "vsadmin",
+  "password": "password"
+}
+
+----
+--
+====
+请注意，后端定义是唯一以纯文本形式存储凭据的地方。后端创建完成后，用户名/密码将使用 Base64 进行编码，并存储为 Kubernetes 密钥。只有创建或更新后端时才需要了解凭据。因此，这是一项仅限管理员执行的操作，由 Kubernetes/存储管理员执行。
+
+
+
+=== 启用基于证书的身份验证
+
+新的和现有的后端都可以使用证书与ONTAP后端通信。后端定义需要三个参数。
+
+* clientCertificate：客户端证书的 Base64 编码值。
+* clientPrivateKey：关联私钥的 Base64 编码值。
+* trustedCACertificate：受信任 CA 证书的 Base64 编码值。如果使用受信任的 CA，则必须提供此参数。如果没有使用受信任的证书颁发机构，则可以忽略此步骤。
+
+
+典型的工作流程包括以下步骤。
+
+.步骤
+. 生成客户端证书和密钥。生成时，将通用名称 (CN) 设置为要进行身份验证的ONTAP用户。
++
+[listing]
+----
+openssl req -x509 -nodes -days 1095 -newkey rsa:2048 -keyout k8senv.key -out k8senv.pem -subj "/C=US/ST=NC/L=RTP/O=NetApp/CN=admin"
+----
+. 向ONTAP集群添加受信任的 CA 证书。这可能已经由存储管理员处理了。如果没有使用受信任的证书颁发机构，则忽略此操作。
++
+[listing]
+----
+security certificate install -type server -cert-name <trusted-ca-cert-name> -vserver <vserver-name>
+ssl modify -vserver <vserver-name> -server-enabled true -client-enabled true -common-name <common-name> -serial <SN-from-trusted-CA-cert> -ca <cert-authority>
+----
+. 在ONTAP集群上安装客户端证书和密钥（来自步骤 1）。
++
+[listing]
+----
+security certificate install -type client-ca -cert-name <certificate-name> -vserver <vserver-name>
+security ssl modify -vserver <vserver-name> -client-enabled true
+----
+. 确认ONTAP安全登录角色支持 `cert`身份验证方法。
++
+[listing]
+----
+security login create -user-or-group-name admin -application ontapi -authentication-method cert
+security login create -user-or-group-name admin -application http -authentication-method cert
+----
+. 使用生成的证书进行身份验证。请将 < ONTAP管理 LIF> 和 <vserver 名称> 替换为管理 LIF IP 地址和 SVM 名称。
++
+[listing]
+----
+curl -X POST -Lk https://<ONTAP-Management-LIF>/servlets/netapp.servlets.admin.XMLrequest_filer --key k8senv.key --cert ~/k8senv.pem -d '<?xml version="1.0" encoding="UTF-8"?><netapp xmlns="http://www.netapp.com/filer/admin" version="1.21" vfiler="<vserver-name>"><vserver-get></vserver-get></netapp>'
+----
+. 使用 Base64 对证书、密钥和受信任的 CA 证书进行编码。
++
+[listing]
+----
+base64 -w 0 k8senv.pem >> cert_base64
+base64 -w 0 k8senv.key >> key_base64
+base64 -w 0 trustedca.pem >> trustedca_base64
+----
+. 使用上一步获得的值创建后端。
++
+[listing]
+----
+cat cert-backend.json
+{
+"version": 1,
+"storageDriverName": "ontap-san",
+"backendName": "SanBackend",
+"managementLIF": "1.2.3.4",
+"svm": "vserver_test",
+"clientCertificate": "Faaaakkkkeeee...Vaaalllluuuueeee",
+"clientPrivateKey": "LS0tFaKE...0VaLuES0tLS0K",
+"trustedCACertificate": "QNFinfO...SiqOyN",
+"storagePrefix": "myPrefix_"
+}
+
+tridentctl create backend -f cert-backend.json -n trident
++------------+----------------+--------------------------------------+--------+---------+
+|    NAME    | STORAGE DRIVER |                 UUID                 | STATE  | VOLUMES |
++------------+----------------+--------------------------------------+--------+---------+
+| SanBackend | ontap-san      | 586b1cd5-8cf8-428d-a76c-2872713612c1 | online |       0 |
++------------+----------------+--------------------------------------+--------+---------+
+----
+
+
+
+
+=== 更新身份验证方法或轮换凭据
+
+您可以更新现有后端，以使用不同的身份验证方法或轮换其凭据。这种方法是双向的：使用用户名/密码的后端可以更新为使用证书；使用证书的后端可以更新为基于用户名/密码的后端。为此，您必须删除现有的身份验证方法并添加新的身份验证方法。然后使用包含所需参数的更新后的 backend.json 文件来执行 `tridentctl backend update`。
+
+[listing]
+----
+cat cert-backend-updated.json
+{
+"version": 1,
+"storageDriverName": "ontap-san",
+"backendName": "SanBackend",
+"managementLIF": "1.2.3.4",
+"svm": "vserver_test",
+"username": "vsadmin",
+"password": "password",
+"storagePrefix": "myPrefix_"
+}
+
+#Update backend with tridentctl
+tridentctl update backend SanBackend -f cert-backend-updated.json -n trident
++------------+----------------+--------------------------------------+--------+---------+
+|    NAME    | STORAGE DRIVER |                 UUID                 | STATE  | VOLUMES |
++------------+----------------+--------------------------------------+--------+---------+
+| SanBackend | ontap-san      | 586b1cd5-8cf8-428d-a76c-2872713612c1 | online |       9 |
++------------+----------------+--------------------------------------+--------+---------+
+----
+
+NOTE: 轮换密码时，存储管理员必须首先更新ONTAP上用户的密码。接下来将进行后端更新。轮换证书时，可以为用户添加多个证书。然后更新后端以使用新证书，之后即可从ONTAP集群中删除旧证书。
+
+更新后端不会中断对已创建卷的访问，也不会影响之后建立的卷连接。后端更新成功表明Trident可以与ONTAP后端通信并处理未来的卷操作。
+
+
+
+=== 为Trident创建自定义ONTAP角色
+
+您可以创建一个具有最低权限的ONTAP集群角色，这样您就不必使用ONTAP管理员角色在Trident中执行操作。在Trident后端配置中包含用户名时， Trident将使用您创建的ONTAP集群角色来执行操作。
+
+请参阅link:https://github.com/NetApp/trident/tree/master/contrib/ontap/trident_role["Trident自定义角色生成器"]有关创建Trident自定义角色的更多信息。
+
+[role="tabbed-block"]
+====
+.使用ONTAP CLI
+--
+. 使用以下命令创建新角色：
++
+`security login role create <role_name\> -cmddirname "command" -access all –vserver <svm_name\>`
+
+. 为Trident用户创建用户名：
++
+`security login create -username <user_name\> -application ontapi -authmethod <password\> -role <name_of_role_in_step_1\> –vserver <svm_name\> -comment "user_description"`
+
+. 将角色映射到用户：
++
+`security login modify username <user_name\> –vserver <svm_name\> -role <role_name\> -application ontapi -application console -authmethod <password\>`
+
+
+
+--
+.使用系统管理器
+--
+在ONTAP系统管理器中执行以下步骤：
+
+. *创建自定义角色*：
++
+.. 要在集群级别创建自定义角色，请选择“集群 > 设置”。
++
+（或者）要在 SVM 级别创建自定义角色，请选择“存储”>“存储虚拟机”> `required SVM` > 设置 > 用户和角色*。
+
+.. 选择“用户和角色”旁边的箭头图标（*->*）。
+.. 在“角色”下选择“+添加”。
+.. 定义角色规则，然后点击“保存”。
+
+
+. 将角色映射到Trident用户： + 在“用户和角色”页面上执行以下步骤：
++
+.. 在“用户”下方选择“添加”图标 *+*。
+.. 选择所需的用户名，然后在“角色”下拉菜单中选择角色。
+.. 单击“保存”。
+
+
+
+
+--
+====
+更多信息请参阅以下页面：
+
+* link:https://kb.netapp.com/on-prem/ontap/Ontap_OS/OS-KBs/FAQ__Custom_roles_for_administration_of_ONTAP["用于管理ONTAP的自定义角色"^]或者link:https://docs.netapp.com/us-en/ontap/authentication/define-custom-roles-task.html["定义自定义角色"^]
+* link:https://docs.netapp.com/us-en/ontap-automation/rest/rbac_roles_users.html#rest-api["与角色和用户协作"^]
+
+
+
+
+== 使用双向 CHAP 验证连接
+
+Trident可以使用双向 CHAP 对 iSCSI 会话进行身份验证。 `ontap-san`和 `ontap-san-economy`司机。这需要启用 `useCHAP`在后端定义中添加选项。设置为 `true`Trident将 SVM 的默认发起程序安全配置为双向 CHAP，并从后端文件中设置用户名和密钥。 NetApp建议使用双向 CHAP 协议对连接进行身份验证。请参见以下示例配置：
+
+[source, yaml]
+----
+---
+version: 1
+storageDriverName: ontap-san
+backendName: ontap_san_chap
+managementLIF: 192.168.0.135
+svm: ontap_iscsi_svm
+useCHAP: true
+username: vsadmin
+password: password
+chapInitiatorSecret: cl9qxIm36DKyawxy
+chapTargetInitiatorSecret: rqxigXgkesIpwxyz
+chapTargetUsername: iJF4heBRT0TCwxyz
+chapUsername: uh2aNCLSd6cNwxyz
+----
+
+WARNING: 这 `useCHAP`该参数是一个布尔选项，只能配置一次。默认值为 false。一旦将其设置为 true，就无法再将其设置为 false。
+
+此外 `useCHAP=true`， 这 `chapInitiatorSecret`， `chapTargetInitiatorSecret` ， `chapTargetUsername` ， 和 `chapUsername`字段必须包含在后端定义中。创建后端后，可以通过运行以下命令来更改密钥： `tridentctl update` 。
+
+
+
+=== 工作原理
+
+通过设置 `useCHAP`如果设置为 true，则存储管理员指示Trident在存储后端配置 CHAP。其中包括以下内容：
+
+* 在SVM上设置CHAP：
++
+** 如果 SVM 的默认启动器安全类型为“无”（默认设置）*并且*卷中不存在任何预先存在的 LUN，Trident会将默认安全类型设置为“无”。 `CHAP`然后继续配置 CHAP 发起程序和目标用户名及密钥。
+** 如果 SVM 包含 LUN， Trident将不会在 SVM 上启用 CHAP。这样可以确保对 SVM 上已存在的 LUN 的访问不受限制。
+
+
+* 配置 CHAP 发起程序和目标用户名和密钥；这些选项必须在后端配置中指定（如上所示）。
+
+
+后端创建完成后， Trident会创建一个相应的实例。 `tridentbackend` CRD 并将 CHAP 密钥和用户名存储为 Kubernetes 密钥。  Trident在此后端创建的所有 PV 都将通过 CHAP 进行安装和连接。
+
+
+
+=== 轮换凭证并更新后端
+
+您可以通过更新 CHAP 参数来更新 CHAP 凭据。 `backend.json`文件。这将需要更新 CHAP 密钥并使用 `tridentctl update`命令反映这些更改。
+
+
+WARNING: 更新后端 CHAP 密钥时，必须使用 `tridentctl`更新后端。请勿使用ONTAP CLI 或ONTAP系统管理器更新存储集群上的凭据，因为Trident将无法检测到这些更改。
+
+[listing]
+----
+cat backend-san.json
+{
+    "version": 1,
+    "storageDriverName": "ontap-san",
+    "backendName": "ontap_san_chap",
+    "managementLIF": "192.168.0.135",
+    "svm": "ontap_iscsi_svm",
+    "useCHAP": true,
+    "username": "vsadmin",
+    "password": "password",
+    "chapInitiatorSecret": "cl9qxUpDaTeD",
+    "chapTargetInitiatorSecret": "rqxigXgkeUpDaTeD",
+    "chapTargetUsername": "iJF4heBRT0TCwxyz",
+    "chapUsername": "uh2aNCLSd6cNwxyz",
+}
+
+./tridentctl update backend ontap_san_chap -f backend-san.json -n trident
++----------------+----------------+--------------------------------------+--------+---------+
+|   NAME         | STORAGE DRIVER |                 UUID                 | STATE  | VOLUMES |
++----------------+----------------+--------------------------------------+--------+---------+
+| ontap_san_chap | ontap-san      | aa458f3b-ad2d-4378-8a33-1a472ffbeb5c | online |       7 |
++----------------+----------------+--------------------------------------+--------+---------+
+----
+现有连接将不受影响；如果Trident在 SVM 上更新凭据，则这些连接将继续保持活动状态。新连接使用更新后的凭据，现有连接将继续保持活动状态。断开并重新连接旧的PV将使它们使用更新后的凭据。

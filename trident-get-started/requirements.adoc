@@ -1,0 +1,262 @@
+---
+sidebar: sidebar 
+permalink: trident-get-started/requirements.html 
+keywords: trident requirements, supported front ends, supported backends, kubernetes cluster, cluster requirements, version requirements, supported versions, host configuration, host os, system configuration, host operating system, fsx, ports, csi, images, orchestrators, storage systems, feature, kubernetes 
+summary: 安装Trident之前，您应该查看这些通用系统要求。特定后端可能还有其他要求。 
+---
+= 要求
+:hardbreaks:
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+安装Trident之前，您应该查看这些通用系统要求。特定后端可能还有其他要求。
+
+
+
+== 关于Trident的关键信息
+
+*您必须阅读以下关于Trident的重要信息。*
+
+.关于Trident的关键信息
+[%collapsible%open]
+====
+[]
+=====
+* Trident现已支持 Kubernetes 1.34。在升级 Kubernetes 之前先升级Trident 。
+* Trident严格强制要求在 SAN 环境中使用多路径配置，建议值为 `find_multipaths: no`在 multipath.conf 文件中。
++
+使用非多路径配置或使用 `find_multipaths: yes`或者 `find_multipaths: smart`multipath.conf 文件中的值会导致挂载失败。  Trident建议使用 `find_multipaths: no`自 21.07 版本发布以来。
+
+
+
+=====
+====
+
+
+== 支持的前端（编排器）
+
+Trident支持多种容器引擎和编排器，包括以下几种：
+
+* Anthos On-Prem (VMware) 和 Anthos on Bare Metal 1.16
+* Kubernetes 1.27 - 1.34
+* OpenShift 4.12、4.14 - 4.19（如果您计划使用 OpenShift 4.19 进行 iSCSI 节点准备，则支持的最低Trident版本为 25.06.1。）
++
+
+NOTE: Trident继续支持旧版本的 OpenShift，以符合……link:https://access.redhat.com/support/policy/updates/openshift["Red Hat 扩展更新支持 (EUS) 发布生命周期"]即使他们依赖于上游不再官方支持的 Kubernetes 版本。在这种情况下安装Trident时，您可以放心地忽略有关 Kubernetes 版本的任何警告消息。
+
+* Rancher Kubernetes Engine 2（RKE2）v1.27.x - 1.34.x
++
+
+NOTE: 虽然Trident在 Rancher Kubernetes Engine 2 (RKE2) 版本 1.27.x - 1.34.x 上受支持，但Trident目前仅在 RKE2 v1.28.5+rke2r1 上获得认证。
+
+
+
+Trident还与许多其他完全托管和自托管的 Kubernetes 产品合作，包括 Google Kubernetes Engine (GKE)、Amazon Elastic Kubernetes Services (EKS)、Azure Kubernetes Service (AKS)、Mirantis Kubernetes Engine (MKE) 和 VMWare Tanzu Portfolio。
+
+Trident和ONTAP可用作存储提供程序link:https://kubevirt.io/["KubeVirt"]。
+
+
+WARNING: 在将已安装Trident的 Kubernetes 集群从 1.25 版本升级到 1.26 或更高版本之前，请参阅以下内容：link:../trident-managing-k8s/upgrade-operator.html#upgrade-a-helm-installation["升级 Helm 安装"] 。
+
+
+
+== 支持的后端（存储）
+
+要使用Trident，您需要以下一个或多个受支持的后端：
+
+* Amazon FSx for NetApp ONTAP
+* Azure NetApp Files
+* Cloud Volumes ONTAP
+* Google Cloud NetApp Volumes
+* NetApp全 SAN 阵列 (ASA)
+* NetApp 有限支持下的本地FAS、 AFF、Select 或ASA r2（iSCSI 和 NVMe/TCP）集群版本。看link:https://mysupport.netapp.com/site/info/version-support["软件版本支持"]。
+* NetApp HCI/Element 软件 11 或更高版本
+
+
+
+
+== Trident对 KubeVirt 和 OpenShift 虚拟化的支持
+
+.支持的存储驱动程序：
+Trident支持以下适用于 KubeVirt 和 OpenShift 虚拟化的ONTAP驱动程序：
+
+* ontap-nas
+* ontap-nas-economy
+* ontap-san（基于 TCP 的 iSCSI、FCP、NVMe）
+* ontap-san-economy（仅限 iSCSI）
+
+
+.需要考虑的要点：
+* 更新存储类以使其具有 `fsType`参数（例如： `fsType: "ext4"`在 OpenShift 虚拟化环境中。如果需要，请使用以下方式显式设置音量模式为阻止模式： `volumeMode=Block`参数 `dataVolumeTemplates`通知 CDI 创建块数据卷。
+* _块存储驱动程序的 RWX 访问模式_: ontap-san (iSCSI、NVMe/TCP、FC) 和 ontap-san-economy (iSCSI) 驱动程序仅支持“volumeMode: Block”（原始设备）。对于这些司机来说， `fstype`由于卷是以原始设备模式提供的，因此无法使用该参数。
+* 对于需要 RWX 访问模式的实时迁移工作流程，支持以下组合：
++
+** NFS+ `volumeMode=Filesystem`
+** iSCSI+ `volumeMode=Block` （原始设备）
+** NVMe/TCP + `volumeMode=Block` （原始设备）
+** FC+ `volumeMode=Block` （原始设备）
+
+
+
+
+
+
+== 功能需求
+
+下表总结了此版本Trident提供的功能及其支持的 Kubernetes 版本。
+
+[cols="3"]
+|===
+| 功能 | Kubernetes 版本 | 需要设置特色门吗？ 
+
+
+| Trident  a| 
+1.27 - 1.34
+ a| 
+否
+
+
+
+| 卷 Snapshot  a| 
+1.27 - 1.34
+ a| 
+否
+
+
+
+| PVC 来自卷快照  a| 
+1.27 - 1.34
+ a| 
+否
+
+
+
+| iSCSI PV 调整大小  a| 
+1.27 - 1.34
+ a| 
+否
+
+
+
+| ONTAP双向 CHAP  a| 
+1.27 - 1.34
+ a| 
+否
+
+
+
+| 动态出口政策  a| 
+1.27 - 1.34
+ a| 
+否
+
+
+
+| Trident操作员  a| 
+1.27 - 1.34
+ a| 
+否
+
+
+
+| CSI拓扑  a| 
+1.27 - 1.34
+ a| 
+否
+
+|===
+
+
+== 测试过的主机操作系统
+
+虽然Trident官方并未正式支持特定操作系统，但已知以下操作系统可以正常工作：
+
+* OpenShift 容器平台支持的 Red Hat Enterprise Linux CoreOS (RHCOS) 版本（AMD64 和 ARM64）
+* RHEL 8+（AMD64 和 ARM64）
++
+
+NOTE: NVMe/TCP 需要 RHEL 9 或更高版本。
+
+* Ubuntu 22.04 或更高版本（AMD64 和 ARM64）
+* Windows Server 2022
+
+
+默认情况下， Trident在容器中运行，因此可以在任何 Linux 工作节点上运行。但是，这些工作人员需要能够使用标准 NFS 客户端或 iSCSI 发起程序挂载Trident提供的卷，具体取决于您使用的后端。
+
+这 `tridentctl`该实用程序也可在上述任何 Linux 发行版上运行。
+
+
+
+== 主机配置
+
+Kubernetes 集群中的所有工作节点都必须能够挂载您为 Pod 配置的卷。要准备工作节点，您必须根据所选驱动程序安装 NFS、iSCSI 或 NVMe 工具。
+
+link:../trident-use/worker-node-prep.html["准备工作节点"]
+
+
+
+== 存储系统配置
+
+Trident可能需要对存储系统进行更改，后端配置才能使用它。
+
+link:../trident-use/backends.html["配置后端"]
+
+
+
+== Trident港口
+
+Trident需要访问特定端口才能进行通信。
+
+link:../trident-reference/ports.html["Trident港口"]
+
+
+
+== 容器镜像和相应的 Kubernetes 版本
+
+对于物理隔离安装，以下列表是安装Trident所需的容器镜像参考。使用 `tridentctl images`用于验证所需容器镜像列表的命令。
+
+
+
+=== Trident 25.06.2 所需的容器镜像
+
+[cols="2"]
+|===
+| Kubernetes 版本 | 容器图像 
+
+
+| v1.27.0、v1.28.0、v1.29.0、v1.30.0、v1.31.0、v1.32.0、v1.33.0、v1.34.0  a| 
+* docker.io/netapp/trident:25.06.2
+* docker.io/netapp/trident-autosupport:25.06
+* registry.k8s.io/sig-storage/csi-provisioner:v5.2.0
+* registry.k8s.io/sig-storage/csi-attacher:v4.8.1
+* registry.k8s.io/sig-storage/csi-resizer:v1.13.2
+* registry.k8s.io/sig-storage/csi-snapshotter:v8.2.1
+* registry.k8s.io/sig-storage/csi-node-driver-registrar:v2.13.0
+* docker.io/netapp/trident-operator:25.06.2（可选）
+
+
+|===
+
+
+=== Trident 25.06 所需的容器镜像
+
+[cols="2"]
+|===
+| Kubernetes 版本 | 容器图像 
+
+
+| v1.27.0、v1.28.0、v1.29.0、v1.30.0、v1.31.0、v1.32.0、v1.33.0、v1.34.0  a| 
+* docker.io/netapp/trident:25.06.0
+* docker.io/netapp/trident-autosupport:25.06
+* registry.k8s.io/sig-storage/csi-provisioner:v5.2.0
+* registry.k8s.io/sig-storage/csi-attacher:v4.8.1
+* registry.k8s.io/sig-storage/csi-resizer:v1.13.2
+* registry.k8s.io/sig-storage/csi-snapshotter:v8.2.1
+* registry.k8s.io/sig-storage/csi-node-driver-registrar:v2.13.0
+* docker.io/netapp/trident-operator:25.06.0（可选）
+
+
+|===

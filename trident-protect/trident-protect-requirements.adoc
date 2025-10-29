@@ -1,0 +1,181 @@
+---
+sidebar: sidebar 
+permalink: trident-protect/trident-protect-requirements.html 
+keywords: trident protect, application, cluster, snapmirror replication, ontap, configuration 
+summary: 首先，请验证您的运行环境、应用程序集群、应用程序和许可证是否准备就绪。请确保您的环境满足部署和运行Trident Protect 的这些要求。 
+---
+= Trident保护要求
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ../media/
+
+
+[role="lead"]
+首先，请验证您的运行环境、应用程序集群、应用程序和许可证是否准备就绪。请确保您的环境满足部署和运行Trident Protect 的这些要求。
+
+
+
+== Trident保护 Kubernetes 集群兼容性
+
+Trident Protect 与各种完全托管和自托管的 Kubernetes 产品兼容，包括：
+
+* 亚马逊弹性 Kubernetes 服务 (EKS)
+* 谷歌 Kubernetes 引擎 (GKE)
+* Microsoft Azure Kubernetes 服务 (AKS)
+* 红帽 OpenShift
+* SUSE Rancher
+* VMware Tanzu 产品组合
+* 上游 Kubernetes
+
+
+[NOTE]
+====
+* Trident保护备份仅支持 Linux 计算节点。Windows 计算节点不支持备份操作。
+* 确保安装Trident Protect 的集群已配置运行中的快照控制器和相关的 CRD。要安装快照控制器，请参阅 https://docs.netapp.com/us-en/trident/trident-use/vol-snapshots.html#deploy-a-volume-snapshot-controller["这些说明"]。
+
+
+====
+
+
+== Trident Protect 存储后端兼容性
+
+Trident Protect 支持以下存储后端：
+
+* Amazon FSx for NetApp ONTAP
+* Cloud Volumes ONTAP
+* ONTAP存储阵列
+* Google Cloud NetApp Volumes
+* Azure NetApp Files
+
+
+请确保您的存储后端满足以下要求：
+
+* 确保连接到集群的NetApp存储使用的是Trident 24.02 或更高版本（建议使用Trident 24.10）。
+
+
+* 请确保您拥有NetApp ONTAP存储后端。
+* 请确保您已配置用于存储备份的对象存储桶。
+* 创建您计划用于应用程序或应用程序数据管理操作的任何应用程序命名空间。  Trident Protect 不会为您创建这些命名空间；如果您在自定义资源中指定了不存在的命名空间，则操作将失败。
+
+
+
+
+== nas-economy 容量要求
+
+Trident Protect 支持对 nas-economy 卷进行备份和恢复操作。目前不支持将快照、克隆和SnapMirror复制到 nas-economy 卷。您需要为计划与Trident Protect 一起使用的每个 nas-economy 卷启用快照目录。
+
+[NOTE]
+====
+某些应用程序与使用快照目录的卷不兼容。对于这些应用，您需要通过在ONTAP存储系统上运行以下命令来隐藏快照目录：
+
+[source, console]
+----
+nfs modify -vserver <svm> -v3-hide-snapshot enabled
+----
+====
+您可以通过对每个 nas-economy 卷运行以下命令来启用快照目录，并将命令替换为 `<volume-UUID>`使用要更改的卷的 UUID：
+
+[source, console]
+----
+tridentctl update volume <volume-UUID> --snapshot-dir=true --pool-level=true -n trident
+----
+
+NOTE: 您可以通过设置Trident后端配置选项，为新卷默认启用快照目录。 `snapshotDir`到 `true`。现有卷数不受影响。
+
+
+
+== 使用 KubeVirt 虚拟机保护数据
+
+Trident Protect 24.10 和 24.10.1 及更高版本在保护运行于 KubeVirt VM 上的应用程序时，行为有所不同。对于这两个版本，您都可以在数据保护操作期间启用或禁用文件系统冻结和解冻结。
+
+
+NOTE: 在恢复操作期间，任何 `VirtualMachineSnapshots`为虚拟机 (VM) 创建的配置文件无法恢复。
+
+.Trident保护 24.10
+Trident protect 24.10 在数据保护操作期间不会自动确保 KubeVirt VM 文件系统的一致性状态。如果您想使用Trident Protect 24.10 保护您的 KubeVirt VM 数据，则需要在执行数据保护操作之前手动启用文件系统的冻结/解冻功能。这样可以确保文件系统处于一致状态。
+
+您可以配置Trident Protect 24.10 来管理数据保护操作期间 VM 文件系统的冻结和解冻。link:https://docs.openshift.com/container-platform/4.16/virt/install/installing-virt.html["配置虚拟化"^]然后使用以下命令：
+
+[source, console]
+----
+kubectl set env deployment/trident-protect-controller-manager NEPTUNE_VM_FREEZE=true -n trident-protect
+----
+.Trident Protect 24.10.1 及更高版本
+从Trident protect 24.10.1 开始， Trident protect 会在数据保护操作期间自动冻结和解冻 KubeVirt 文件系统。您也可以使用以下命令禁用此自动行为：
+
+[source, console]
+----
+kubectl set env deployment/trident-protect-controller-manager NEPTUNE_VM_FREEZE=false -n trident-protect
+----
+
+
+== SnapMirror复制的要求
+
+NetApp SnapMirror复制功能可与Trident Protect 配合使用，适用于以下ONTAP解决方案：
+
+* 本地部署的NetApp FAS、 AFF和ASA集群
+* NetApp ONTAP Select
+* NetApp Cloud Volumes ONTAP
+* Amazon FSx for NetApp ONTAP
+
+
+
+
+=== ONTAP集群对SnapMirror复制的要求
+
+如果您计划使用SnapMirror复制功能，请确保您的ONTAP集群满足以下要求：
+
+* * NetApp Trident *：使用ONTAP作为后端服务的源 Kubernetes 集群和目标 Kubernetes 集群上都必须存在NetApp Trident 。  Trident Protect 支持使用NetApp SnapMirror技术进行复制，该技术使用以下驱动程序支持的存储类：
++
+** `ontap-nas`：极品飞车
+** `ontap-san`：iSCSI
+** `ontap-san`：FC
+** `ontap-san`：NVMe/TCP（最低要求ONTAP版本 9.15.1）
+
+
+* *许可证*：使用数据保护包的ONTAP SnapMirror异步许可证必须在源 ONTAP 集群和目标ONTAP集群上启用。请参阅 https://docs.netapp.com/us-en/ontap/data-protection/snapmirror-licensing-concept.html["ONTAP中的SnapMirror许可概述"^]了解更多信息。
++
+从ONTAP 9.10.1 开始，所有许可证均以NetApp许可证文件 (NLF) 的形式交付，这是一个可以启用多种功能的单个文件。请参阅link:https://docs.netapp.com/us-en/ontap/system-admin/manage-licenses-concept.html#licenses-included-with-ontap-one["ONTAP One 附带的许可证"^]了解更多信息。
+
++
+
+NOTE: 仅支持SnapMirror异步保护。
+
+
+
+
+
+=== SnapMirror复制的对等连接注意事项
+
+如果您计划使用存储后端对等互连，请确保您的环境满足以下要求：
+
+* *集群和 SVM*： ONTAP存储后端必须相互连接。请参阅 https://docs.netapp.com/us-en/ontap/peering/index.html["集群和SVM对等连接概述"^]了解更多信息。
++
+
+NOTE: 确保两个ONTAP集群之间复制关系中使用的 SVM 名称是唯一的。
+
+* * NetApp Trident和 SVM*：对等远程 SVM 必须可供目标集群上的NetApp Trident使用。
+* *托管后端*：您需要在Trident Protect 中添加和管理ONTAP存储后端，以创建复制关系。
+
+
+
+
+=== 用于SnapMirror复制的Trident / ONTAP配置
+
+Trident Protect 要求您至少配置一个支持源集群和目标集群复制的存储后端。如果源集群和目标集群相同，为了获得最佳弹性，目标应用程序应该使用与源应用程序不同的存储后端。
+
+
+
+=== SnapMirror复制的 Kubernetes 集群要求
+
+请确保您的 Kubernetes 集群满足以下要求：
+
+* *AppVault 可访问性*：源集群和目标集群都必须具有网络访问权限，才能从 AppVault 读取数据和写入数据，以实现应用程序对象复制。
+* *网络连接*：配置防火墙规则、存储桶权限和 IP 允许列表，以启用两个集群和 AppVault 之间通过 WAN 进行通信。
+
+
+
+NOTE: 许多企业环境在广域网连接中实施严格的防火墙策略。在配置复制之前，请与您的基础架构团队确认这些网络要求。

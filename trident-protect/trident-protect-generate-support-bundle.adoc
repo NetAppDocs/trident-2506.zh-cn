@@ -1,0 +1,106 @@
+---
+sidebar: sidebar 
+permalink: trident-protect/trident-protect-generate-support-bundle.html 
+keywords: trident, protect, bundle, support, netapp, custom, resource, file 
+summary: 'Trident Protect 使管理员能够生成包含对NetApp支持有用的信息的捆绑包，包括有关所管理的集群和应用程序的日志、指标和拓扑信息。如果您已连接到互联网，则可以使用自定义资源 (CR) 文件将支持包上传到NetApp支持站点 (NSS)。' 
+---
+= 生成Trident Protect 支持包
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ../media/
+
+
+[role="lead"]
+Trident Protect 使管理员能够生成包含对NetApp支持有用的信息的捆绑包，包括有关所管理的集群和应用程序的日志、指标和拓扑信息。如果您已连接到互联网，则可以使用自定义资源 (CR) 文件将支持包上传到NetApp支持站点 (NSS)。
+
+[role="tabbed-block"]
+====
+.使用 CR 创建支持包
+--
+.步骤
+. 创建自定义资源 (CR) 文件并将其命名为（例如， `trident-protect-support-bundle.yaml` ）。
+. 配置以下属性：
++
+** *metadata.name*: (_必填_) 此自定义资源的名称；请为您的环境选择一个唯一且有意义的名称。
+** *spec.triggerType*: (_Required_) 确定支持包是立即生成还是按计划生成。计划的数据包生成时间为世界协调时凌晨 12 点。可能值：
++
+*** 已计划
+*** 手动
+
+
+** *spec.uploadEnabled*: (_可选_) 控制生成支持包后是否应将其上传到NetApp支持站点。如果未指定，则默认为 `false`。可能值：
++
+*** true
+*** false（默认值）
+
+
+** *spec.dataWindowStart*: (_可选_) RFC 3339 格式的日期字符串，指定支持包中包含的数据窗口应开始的日期和时间。如果未指定，则默认为 24 小时前。您最早可以指定的日期范围是 7 天前。
++
+YAML 示例：
+
++
+[source, yaml]
+----
+---
+apiVersion: protect.trident.netapp.io/v1
+kind: AutoSupportBundle
+metadata:
+  name: trident-protect-support-bundle
+spec:
+  triggerType: Manual
+  uploadEnabled: true
+  dataWindowStart: 2024-05-05T12:30:00Z
+----
+
+
+. 填写完之后 `trident-protect-support-bundle.yaml`将文件的值正确后，应用 CR：
++
+[source, console]
+----
+kubectl apply -f trident-protect-support-bundle.yaml -n trident-protect
+----
+
+
+--
+.使用 CLI 创建支持包
+--
+.步骤
+. 创建支持包，将括号中的值替换为您环境中的信息。这 `trigger-type`决定捆绑包是立即创建还是由计划安排决定创建时间，并且可以是 `Manual`或者 `Scheduled`。默认设置是 `Manual`。
++
+例如：
+
++
+[source, console]
+----
+tridentctl-protect create autosupportbundle <my-bundle-name> --trigger-type <trigger-type> -n trident-protect
+----
+
+
+--
+====
+
+
+== 监视和检索支持包
+
+使用任一方法创建支持包后，您可以监视其生成进度并将其检索到本地系统。
+
+.步骤
+. 等待 `status.generationState`到达 `Completed`状态。您可以使用以下命令监控生成进度：
++
+[source, console]
+----
+kubectl get autosupportbundle trident-protect-support-bundle -n trident-protect
+----
+. 将支持包检索到您的本地系统。从已完成的AutoSupport包中获取复制命令：
++
+[source, console]
+----
+kubectl describe autosupportbundle trident-protect-support-bundle -n trident-protect
+----
++
+找到 `kubectl cp`从输出中读取命令并运行它，将目标参数替换为您首选的本地目录。
+
+

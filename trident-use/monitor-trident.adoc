@@ -1,0 +1,180 @@
+---
+sidebar: sidebar 
+permalink: trident-use/monitor-trident.html 
+keywords: telemetry, Trident, monitor, metrics, health, volume usage, autosupport 
+summary: Trident提供了一组 Prometheus 指标端点，您可以使用这些端点来监控 Trident 的性能。 
+---
+= 监视Trident
+:hardbreaks:
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Trident提供了一组 Prometheus 指标端点，您可以使用这些端点来监控Trident 的性能。
+
+
+
+== 概述
+
+Trident提供的指标使您能够执行以下操作：
+
+* 密切关注 Trident 的健康状况和配置。您可以检查操作是否成功，以及是否能按预期与后端通信。
+* 检查后端使用情况信息，了解后端配置了多少卷、消耗了多少空间等等。
+* 维护可用后端已配置卷量的映射表。
+* 赛道表现。您可以查看Trident与后端通信和执行操作所需的时间。
+
+
+
+NOTE: 默认情况下，Trident 的指标会暴露在目标端口上。 `8001`在 `/metrics`端点。安装Trident时，这些指标*默认启用*。
+
+.你需要什么
+* 已安装Trident的 Kubernetes 集群。
+* 普罗米修斯实例。这可能是一个 https://github.com/prometheus-operator/prometheus-operator["容器化的 Prometheus 部署"^]或者您可以选择以某种方式运行 Prometheus https://prometheus.io/download/["本机应用程序"^] 。
+
+
+
+
+== 步骤 1：定义 Prometheus 目标
+
+您应该定义一个 Prometheus 目标来收集指标并获取有关Trident管理的后端、它创建的卷等的信息。这 https://netapp.io/2020/02/20/prometheus-and-trident/["博客"^]解释了如何将 Prometheus 和 Grafana 与Trident结合使用来检索指标。该博客解释了如何在 Kubernetes 集群中以 Operator 的形式运行 Prometheus，以及如何创建 ServiceMonitor 来获取Trident指标。
+
+
+
+== 步骤 2：创建 Prometheus 服务监视器
+
+要使用Trident指标，您应该创建一个 Prometheus ServiceMonitor 来监视 `trident-csi`服务和监听 `metrics`港口。一个示例 ServiceMonitor 如下所示：
+
+[source, yaml]
+----
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: trident-sm
+  namespace: monitoring
+  labels:
+    release: prom-operator
+spec:
+  jobLabel: trident
+  selector:
+    matchLabels:
+      app: controller.csi.trident.netapp.io
+  namespaceSelector:
+    matchNames:
+      - trident
+  endpoints:
+    - port: metrics
+      interval: 15s
+----
+此 ServiceMonitor 定义检索由以下方式返回的指标： `trident-csi`服务，特别是寻找 `metrics`服务的端点。因此，Prometheus 现在已配置为能够理解 Trident 的指标。
+
+除了Trident直接提供的指标外，kubelet 还公开了许多其他指标。 `kubelet_volume_*`通过其自身的指标端点获取指标。 Kubelet 可以提供有关已附加卷、Pod 以及它处理的其他内部操作的信息。参考 https://kubernetes.io/docs/concepts/cluster-administration/monitoring/["此处"^]。
+
+
+
+== 步骤 3：使用 PromQL 查询Trident指标
+
+PromQL 非常适合创建返回时间序列或表格数据的表达式。
+
+以下是一些您可以使用的 PromQL 查询：
+
+
+
+=== 获取Trident健康信息
+
+* Trident服务器 HTTP 2XX 响应的百分比
+
+
+[listing]
+----
+(sum (trident_rest_ops_seconds_total_count{status_code=~"2.."} OR on() vector(0)) / sum (trident_rest_ops_seconds_total_count)) * 100
+----
+* ** Trident REST 响应状态码百分比**
+
+
+[listing]
+----
+(sum (trident_rest_ops_seconds_total_count) by (status_code)  / scalar (sum (trident_rest_ops_seconds_total_count))) * 100
+----
+* ** Trident执行操作的平均持续时间（毫秒）**
+
+
+[listing]
+----
+sum by (operation) (trident_operation_duration_milliseconds_sum{success="true"}) / sum by (operation) (trident_operation_duration_milliseconds_count{success="true"})
+----
+
+
+=== 获取Trident使用信息
+
+* 平均体积大小
+
+
+[listing]
+----
+trident_volume_allocated_bytes/trident_volume_count
+----
+* **各后端分配的总存储空间**
+
+
+[listing]
+----
+sum (trident_volume_allocated_bytes) by (backend_uuid)
+----
+
+
+=== 获取个人用量
+
+
+NOTE: 只有在同时收集 kubelet 指标的情况下才会启用此功能。
+
+* **各卷册的空间利用率**
+
+
+[listing]
+----
+kubelet_volume_stats_used_bytes / kubelet_volume_stats_capacity_bytes * 100
+----
+
+
+== 了解Trident AutoSupport遥测技术
+
+默认情况下， Trident每天向NetApp发送 Prometheus 指标和基本后端信息。
+
+* 要阻止Trident向NetApp发送 Prometheus 指标和基本后端信息，请传递以下参数： `--silence-autosupport`在Trident安装过程中发出警报。
+* Trident还可以按需通过以下方式将容器日志发送给NetApp支持： `tridentctl send autosupport` 。您需要触发Trident上传其日志。提交日志之前，您应该接受 NetApp 的条款。https://www.netapp.com/company/legal/privacy-policy/["隐私政策"^] 。
+* 除非另有说明， Trident会获取过去 24 小时的日志。
+* 您可以使用以下方式指定日志保留时间范围： `--since`旗帜。例如： `tridentctl send autosupport --since=1h` 。这些信息通过以下方式收集和发送： `trident-autosupport`与Trident一起安装的容器。您可以从以下位置获取容器镜像： https://hub.docker.com/r/netapp/trident-autosupport["Trident AutoSupport"^] 。
+* Trident AutoSupport不会收集或传输个人身份信息 (PII) 或个人信息。它附带一个 https://www.netapp.com/us/media/enduser-license-agreement-worldwide.pdf["最终用户许可协议"^]这并不适用于Trident容器镜像本身。您可以了解更多关于NetApp对数据安全和信任的承诺。 https://www.netapp.com/pdf.html?item=/media/14114-enduserlicenseagreementworldwidepdf.pdf["此处"^] 。
+
+
+Trident发送的有效载荷示例如下所示：
+
+[source, yaml]
+----
+---
+items:
+  - backendUUID: ff3852e1-18a5-4df4-b2d3-f59f829627ed
+    protocol: file
+    config:
+      version: 1
+      storageDriverName: ontap-nas
+      debug: false
+      debugTraceFlags: null
+      disableDelete: false
+      serialNumbers:
+        - nwkvzfanek_SN
+      limitVolumeSize: ""
+    state: online
+    online: true
+----
+* AutoSupport消息会发送到 NetApp 的AutoSupport端点。如果您使用私有镜像仓库来存储容器镜像，则可以使用 `--image-registry`旗帜。
+* 您还可以通过生成安装 YAML 文件来配置代理 URL。这可以通过使用 `tridentctl install --generate-custom-yaml`创建 YAML 文件并添加 `--proxy-url`论证 `trident-autosupport`容器 `trident-deployment.yaml`。
+
+
+
+
+== 禁用Trident指标
+
+要**禁用**指标报告，您应该生成自定义 YAML 文件（使用以下方式）： `--generate-custom-yaml`标记）并编辑它们以删除 `--metrics`阻止对 `trident-main`容器。

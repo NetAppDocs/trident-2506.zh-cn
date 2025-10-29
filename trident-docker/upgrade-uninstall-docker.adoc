@@ -1,0 +1,101 @@
+---
+sidebar: sidebar 
+permalink: trident-docker/upgrade-uninstall-docker.html 
+keywords: uninstall, Trident, trident for docker, docker, upgrade trident for docker 
+summary: '您可以安全地升级Trident for Docker，而不会对正在使用的卷产生任何影响。升级过程中会有一段短暂的时间， `docker volume`针对该插件的命令将不会成功，应用程序将无法挂载卷，直到该插件再次运行。大多数情况下，这只需要几秒钟。' 
+---
+= 升级或卸载Trident
+:hardbreaks:
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+您可以安全地升级Trident for Docker，而不会对正在使用的卷产生任何影响。升级过程中会有一段短暂的时间， `docker volume`针对该插件的命令将不会成功，应用程序将无法挂载卷，直到该插件再次运行。大多数情况下，这只需要几秒钟。
+
+
+
+== 升级
+
+按照以下步骤升级Trident for Docker。
+
+.步骤
+. 列出现有卷册：
++
+[listing]
+----
+docker volume ls
+DRIVER              VOLUME NAME
+netapp:latest       my_volume
+----
+. 禁用插件：
++
+[listing]
+----
+docker plugin disable -f netapp:latest
+docker plugin ls
+ID                  NAME                DESCRIPTION                          ENABLED
+7067f39a5df5        netapp:latest       nDVP - NetApp Docker Volume Plugin   false
+----
+. 升级插件：
++
+[listing]
+----
+docker plugin upgrade --skip-remote-check --grant-all-permissions netapp:latest netapp/trident-plugin:21.07
+----
++
+
+NOTE: Trident 18.01 版本取代了 nDVP。你应该直接从以下位置升级： `netapp/ndvp-plugin`图片到 `netapp/trident-plugin`图像。
+
+. 启用插件：
++
+[listing]
+----
+docker plugin enable netapp:latest
+----
+. 请确认插件已启用：
++
+[listing]
+----
+docker plugin ls
+ID                  NAME                DESCRIPTION                             ENABLED
+7067f39a5df5        netapp:latest       Trident - NetApp Docker Volume Plugin   true
+----
+. 确认卷可见：
++
+[listing]
+----
+docker volume ls
+DRIVER              VOLUME NAME
+netapp:latest       my_volume
+----
+
+
+
+IMPORTANT: 如果您从旧版本的Trident （20.10 之前）升级到Trident 20.10 或更高版本，则可能会遇到错误。更多信息，请参阅link:known-issues-docker.html["已知问题"^]。如果遇到此错误，您应该先禁用该插件，然后删除该插件，最后通过传递额外的配置参数来安装所需的Trident版本： `docker plugin install netapp/trident-plugin:20.10 --alias netapp --grant-all-permissions config=config.json`
+
+
+
+== 卸载
+
+按照以下步骤卸载Trident for Docker。
+
+.步骤
+. 删除插件创建的所有卷。
+. 禁用插件：
++
+[listing]
+----
+docker plugin disable netapp:latest
+docker plugin ls
+ID                  NAME                DESCRIPTION                          ENABLED
+7067f39a5df5        netapp:latest       nDVP - NetApp Docker Volume Plugin   false
+----
+. 移除插件：
++
+[listing]
+----
+docker plugin rm netapp:latest
+----
+

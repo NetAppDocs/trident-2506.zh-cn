@@ -1,0 +1,272 @@
+---
+sidebar: sidebar 
+permalink: trident-use/element.html 
+keywords: trident backend, solidfire, netapp hci, drivers, access modes, rwo, rwx, rwp, rwop, file system 
+summary: 了解如何在Trident安装中创建和使用 Element 后端。 
+---
+= 配置NetApp HCI或SolidFire后端
+:hardbreaks:
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+了解如何在Trident安装中创建和使用 Element 后端。
+
+
+
+== 元素驱动程序详情
+
+Trident提供 `solidfire-san`用于与集群通信的存储驱动程序。支持的访问模式有：_ReadWriteOnce_ (RWO)、_ReadOnlyMany_ (ROX)、_ReadWriteMany_ (RWX)、_ReadWriteOncePod_ (RWOP)。
+
+这 `solidfire-san`存储驱动程序支持_文件_和_块_卷模式。对于 `Filesystem`volumeMode， Trident创建一个卷并创建一个文件系统。文件系统类型由 StorageClass 指定。
+
+[cols="5"]
+|===
+| 驱动程序 | 协议 | 音量模式 | 支持的访问模式 | 支持的文件系统 
+
+
+| `solidfire-san`  a| 
+iSCSI
+ a| 
+块
+ a| 
+RWO、ROX、RWX、RWOP
+ a| 
+没有文件系统。原始块设备。
+
+
+
+| `solidfire-san`  a| 
+iSCSI
+ a| 
+Filesystem
+ a| 
+RWO，RWOP
+ a| 
+`xfs`， `ext3` ， `ext4`
+
+|===
+
+
+== 开始之前
+
+创建 Element 后端之前，您需要以下内容。
+
+* 一个支持运行 Element 软件的存储系统。
+* 拥有NetApp HCI/ SolidFire集群管理员或租户用户权限，可以管理卷。
+* 所有 Kubernetes 工作节点都应该安装相应的 iSCSI 工具。参考link:../trident-use/worker-node-prep.html["工作节点准备信息"]。
+
+
+
+
+== 后端配置选项
+
+请参阅下表了解后端配置选项：
+
+[cols="3"]
+|===
+| 参数 | 描述 | 默认 
+
+
+| `version` |  | 始终为 1 
+
+
+| `storageDriverName` | 存储驱动程序的名称 | 始终是“solidfire-san” 
+
+
+| `backendName` | 自定义名称或存储后端 | "solidfire_" + 存储 (iSCSI) IP 地址 
+
+
+| `Endpoint` | 针对SolidFire集群的 MVIP，包含租户凭证 |  
+
+
+| `SVIP` | 存储（iSCSI）IP 地址和端口 |  
+
+
+| `labels` | 要应用于卷的任意 JSON 格式标签集。 | "" 
+
+
+| `TenantName` | 要使用的租户名称（如果找不到则创建） |  
+
+
+| `InitiatorIFace` | 将 iSCSI 流量限制到特定主机接口 | “默认” 
+
+
+| `UseCHAP` | 使用 CHAP 对 iSCSI 进行身份验证。  Trident使用 CHAP。 | true 
+
+
+| `AccessGroups` | 要使用的访问组 ID 列表 | 查找名为“trident”的访问组的 ID 
+
+
+| `Types` | QoS规范 |  
+
+
+| `limitVolumeSize` | 如果请求的卷大小超过此值，则配置失败。 | （默认情况下不强制执行） 
+
+
+| `debugTraceFlags` | 故障排除时要使用的调试标志。例如，{"api":false, "method":true} | 无效的 
+|===
+
+WARNING: 请勿使用 `debugTraceFlags`除非您正在进行故障排除并且需要详细的日志转储。
+
+
+
+== 示例 1：后端配置 `solidfire-san`具有三种音量类型的驱动器
+
+本示例展示了一个使用 CHAP 认证的后端文件，并对三种具有特定 QoS 保证的卷类型进行了建模。最有可能的情况是，您会定义存储类来使用它们中的每一个。 `IOPS`存储类参数。
+
+[source, yaml]
+----
+---
+version: 1
+storageDriverName: solidfire-san
+Endpoint: https://<user>:<password>@<mvip>/json-rpc/8.0
+SVIP: <svip>:3260
+TenantName: <tenant>
+labels:
+  k8scluster: dev1
+  backend: dev1-element-cluster
+UseCHAP: true
+Types:
+  - Type: Bronze
+    Qos:
+      minIOPS: 1000
+      maxIOPS: 2000
+      burstIOPS: 4000
+  - Type: Silver
+    Qos:
+      minIOPS: 4000
+      maxIOPS: 6000
+      burstIOPS: 8000
+  - Type: Gold
+    Qos:
+      minIOPS: 6000
+      maxIOPS: 8000
+      burstIOPS: 10000
+----
+
+
+== 示例 2：后端和存储类配置 `solidfire-san`带虚拟池的驱动程序
+
+此示例显示了配置了虚拟池的后端定义文件以及引用这些虚拟池的存储类。
+
+Trident在配置时将存储池中存在的标签复制到后端存储 LUN。为了方便起见，存储管理员可以为每个虚拟池定义标签，并按标签对卷进行分组。
+
+在下方所示的示例后端定义文件中，所有存储池都设置了特定的默认值，这些默认值决定了： `type`银级。虚拟池在以下位置定义： `storage`部分。在这个例子中，一些存储池设置了自己的类型，而一些存储池则覆盖了上面设置的默认值。
+
+[source, yaml]
+----
+---
+version: 1
+storageDriverName: solidfire-san
+Endpoint: https://<user>:<password>@<mvip>/json-rpc/8.0
+SVIP: <svip>:3260
+TenantName: <tenant>
+UseCHAP: true
+Types:
+  - Type: Bronze
+    Qos:
+      minIOPS: 1000
+      maxIOPS: 2000
+      burstIOPS: 4000
+  - Type: Silver
+    Qos:
+      minIOPS: 4000
+      maxIOPS: 6000
+      burstIOPS: 8000
+  - Type: Gold
+    Qos:
+      minIOPS: 6000
+      maxIOPS: 8000
+      burstIOPS: 10000
+type: Silver
+labels:
+  store: solidfire
+  k8scluster: dev-1-cluster
+region: us-east-1
+storage:
+  - labels:
+      performance: gold
+      cost: "4"
+    zone: us-east-1a
+    type: Gold
+  - labels:
+      performance: silver
+      cost: "3"
+    zone: us-east-1b
+    type: Silver
+  - labels:
+      performance: bronze
+      cost: "2"
+    zone: us-east-1c
+    type: Bronze
+  - labels:
+      performance: silver
+      cost: "1"
+    zone: us-east-1d
+
+
+----
+以下 StorageClass 定义与上述虚拟池相关。使用 `parameters.selector`字段中，每个 StorageClass 都会指定哪些虚拟池可用于托管卷。卷将具有所选虚拟池中定义的各个方面。
+
+第一个存储类(`solidfire-gold-four`将映射到第一个虚拟池。这是唯一一家提供黄金级性能的泳池。 `Volume Type QoS`黄金。最后一个存储类(`solidfire-silver`）指出任何提供银级性能的存储池。  Trident将决定选择哪个虚拟池，并确保满足存储需求。
+
+[source, yaml]
+----
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: solidfire-gold-four
+provisioner: csi.trident.netapp.io
+parameters:
+  selector: performance=gold; cost=4
+  fsType: ext4
+
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: solidfire-silver-three
+provisioner: csi.trident.netapp.io
+parameters:
+  selector: performance=silver; cost=3
+  fsType: ext4
+
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: solidfire-bronze-two
+provisioner: csi.trident.netapp.io
+parameters:
+  selector: performance=bronze; cost=2
+  fsType: ext4
+
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: solidfire-silver-one
+provisioner: csi.trident.netapp.io
+parameters:
+  selector: performance=silver; cost=1
+  fsType: ext4
+
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: solidfire-silver
+provisioner: csi.trident.netapp.io
+parameters:
+  selector: performance=silver
+  fsType: ext4
+----
+
+
+== 查找更多信息
+
+* link:../trident-concepts/vol-access-groups.html["卷访问组"^]
+

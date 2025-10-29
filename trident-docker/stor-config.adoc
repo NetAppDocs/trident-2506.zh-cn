@@ -1,0 +1,586 @@
+---
+sidebar: sidebar 
+permalink: trident-docker/stor-config.html 
+keywords: deploy, trident, docker, trident for docker, nfs, iscsi, protocol, nfs protocol, iscsi protocol, configure host, host config, storage config, options, variables, ontap, element, storage pool, cvs, cvs-performance, service type, service level, cloud volumes service, cloud volumes 
+summary: 查看适用于您的Trident配置的配置选项。 
+---
+= 存储配置选项
+:hardbreaks:
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+查看适用于您的Trident配置的配置选项。
+
+
+
+== 全局配置选项
+
+这些配置选项适用于所有Trident配置，无论使用何种存储平台。
+
+[cols="3*"]
+|===
+| 选项 | 描述 | 示例 
+
+
+| `version`  a| 
+配置文件版本号
+ a| 
+`1`
+
+
+
+| `storageDriverName`  a| 
+存储驱动程序名称
+ a| 
+`ontap-nas`， `ontap-san` ， `ontap-nas-economy` ，
+`ontap-nas-flexgroup` ， `solidfire-san`
+
+
+
+| `storagePrefix`  a| 
+卷名称的可选前缀。默认： `netappdvp_` 。
+ a| 
+`staging_`
+
+
+
+| `limitVolumeSize`  a| 
+对容量大小有可选限制。默认值：""（不强制执行）
+ a| 
+`10g`
+
+|===
+
+TIP: 请勿使用 `storagePrefix`（包括默认值）适用于 Element 后端。默认情况下， `solidfire-san`驱动程序将忽略此设置，并且不使用前缀。  NetApp建议使用特定的租户 ID 进行 Docker 卷映射，或者使用属性数据，该属性数据填充了 Docker 版本、驱动程序信息和来自 Docker 的原始名称（如果可能使用了任何名称修改）。
+
+可以使用默认选项，避免在创建的每个卷上都指定这些选项。这 `size`此选项适用于所有控制器类型。有关如何设置默认卷大小的示例，请参阅ONTAP配置部分。
+
+[cols="3*"]
+|===
+| 选项 | 描述 | 示例 
+
+
+| `size`  a| 
+新建卷的可选默认大小。默认： `1G`
+ a| 
+`10G`
+
+|===
+
+
+== ONTAP 配置
+
+除了上述全局配置值之外，使用ONTAP时，还可以使用以下顶级选项。
+
+[cols="3*"]
+|===
+| 选项 | 描述 | 示例 
+
+
+| `managementLIF`  a| 
+ONTAP管理 LIF 的 IP 地址。您可以指定一个完全限定域名（FQDN）。
+ a| 
+`10.0.0.1`
+
+
+
+| `dataLIF`  a| 
+LIF协议的IP地址。
+
+* ONTAP NAS 驱动程序*： NetApp建议指定 `dataLIF`。如果未提供， Trident将从 SVM 获取 dataLIF。您可以指定一个完全限定域名 (FQDN) 用于 NFS 挂载操作，从而创建轮询 DNS 以在多个 dataLIF 之间进行负载均衡。
+
+* ONTAP SAN 驱动程序*：请勿指定 iSCSI 或 FC。Trident的使用link:https://docs.netapp.com/us-en/ontap/san-admin/selective-lun-map-concept.html["ONTAP选择性 LUN 地图"^]发现建立多路径会话所需的 iSCSI 或 FC LIF。如果出现以下情况，则会生成警告： `dataLIF`已明确定义。
+ a| 
+`10.0.0.2`
+
+
+
+| `svm`  a| 
+要使用的存储虚拟机（如果管理 LIF 是集群 LIF，则此项为必填项）
+ a| 
+`svm_nfs`
+
+
+
+| `username`  a| 
+连接到存储设备的用户名
+ a| 
+`vsadmin`
+
+
+
+| `password`  a| 
+连接存储设备的密码
+ a| 
+`secret`
+
+
+
+| `aggregate`  a| 
+用于配置的聚合（可选；如果设置，则必须分配给 SVM）。对于 `ontap-nas-flexgroup`驱动程序，此选项将被忽略。分配给 SVM 的所有聚合都用于配置FlexGroup卷。
+ a| 
+`aggr1`
+
+
+
+| `limitAggregateUsage`  a| 
+可选，如果使用率超过此百分比，则配置失败
+ a| 
+`75%`
+
+
+
+| `nfsMountOptions`  a| 
+对 NFS 挂载选项进行精细控制；默认值为“-o nfsvers=3”。  *仅限以下情况： `ontap-nas`和 `ontap-nas-economy`司机*。 https://www.netapp.com/pdf.html?item=/media/10720-tr-4067.pdf["请在此处查看 NFS 主机配置信息"^] 。
+ a| 
+`-o nfsvers=4`
+
+
+
+| `igroupName`  a| 
+Trident创建和管理每个节点 `igroups`作为 `netappdvp`。
+
+此值不能更改或省略。
+
+*仅限以下情况： `ontap-san`司机*。
+ a| 
+`netappdvp`
+
+
+
+| `limitVolumeSize`  a| 
+最大可请求容量。
+ a| 
+`300g`
+
+
+
+| `qtreesPerFlexvol`  a| 
+每个FlexVol 的最大 qtree 数量必须在 [50, 300] 范围内，默认值为 200。
+
+*对于 `ontap-nas-economy`驱动程序，此选项允许自定义每个FlexVol* 的最大 qtree 数量。
+ a| 
+`300`
+
+
+
+ a| 
+`sanType`
+| *支持 `ontap-san`仅限司机。*用于选择 `iscsi`对于 iSCSI， `nvme`适用于 NVMe/TCP 或 `fcp`用于光纤通道 (FC) 上的 SCSI。 | `iscsi`如果为空 
+
+
+| `limitVolumePoolSize` | *支持 `ontap-san-economy`和 `ontap-san-economy`仅限司机。*限制ONTAP ontap-nas-economy 和 ontap-SAN-economy 驱动程序中的FlexVol大小。  a| 
+`300g`
+
+|===
+系统提供了默认选项，避免在创建的每个卷上都进行指定：
+
+[cols="1,3,2"]
+|===
+| 选项 | 描述 | 示例 
+
+
+| `spaceReserve`  a| 
+空间预订模式； `none` （精简配置）或 `volume`（厚的）
+ a| 
+`none`
+
+
+
+| `snapshotPolicy`  a| 
+要使用的快照策略，默认值为 `none`
+ a| 
+`none`
+
+
+
+| `snapshotReserve`  a| 
+快照预留百分比，默认值为空字符串，表示接受ONTAP默认值。
+ a| 
+`10`
+
+
+
+| `splitOnClone`  a| 
+创建时将克隆体与其父级分离，默认为 `false`
+ a| 
+`false`
+
+
+
+| `encryption`  a| 
+在新卷上启用NetApp卷加密 (NVE)；默认启用 `false`。要使用此选项，必须在集群上获得 NVE 许可并启用 NVE。
+
+如果后端启用了 NAE，则在Trident中配置的任何卷都将启用 NAE。
+
+更多信息，请参阅：link:../trident-reco/security-reco.html["Trident如何与 NVE 和 NAE 协同工作"] 。
+ a| 
+true
+
+
+
+| `unixPermissions`  a| 
+NAS 选项，用于已配置的 NFS 卷，默认值为 `777`
+ a| 
+`777`
+
+
+
+| `snapshotDir`  a| 
+NAS选项用于访问 `.snapshot`目录。
+ a| 
+NFSv4 为“true”，NFSv3 为“false”。
+
+
+
+| `exportPolicy`  a| 
+NFS导出策略要使用的NAS选项，默认值为 `default`
+ a| 
+`default`
+
+
+
+| `securityStyle`  a| 
+NAS 选项，用于访问已配置的 NFS 卷。
+
+NFS 支持 `mixed`和 `unix`安全措施。默认值为 `unix`。
+ a| 
+`unix`
+
+
+
+| `fileSystemType`  a| 
+SAN选项用于选择文件系统类型，默认为 `ext4`
+ a| 
+`xfs`
+
+
+
+| `tieringPolicy`  a| 
+要使用的分层策略，默认值为 `none`。
+ a| 
+`none`
+
+|===
+
+
+=== 缩放选项
+
+这 `ontap-nas`和 `ontap-san`驱动程序为每个 Docker 卷创建一个ONTAP FlexVol 。  ONTAP每个集群节点最多支持 1000 个 FlexVol，集群最多可支持 12,000 个FlexVol卷。如果您的 Docker 卷需求符合此限制，则 `ontap-nas`由于 FlexVols 提供了 Docker 卷粒度快照和克隆等附加功能，因此驱动程序是首选的 NAS 解决方案。
+
+如果您需要的 Docker 卷数量超过了FlexVol 的限制，请选择 `ontap-nas-economy`或者 `ontap-san-economy`司机。
+
+这 `ontap-nas-economy`驱动程序在自动管理的FlexVol卷池中创建作为ONTAP Qtree 的 Docker 卷。 Qtree 提供了更大的可扩展性，每个集群节点最多可达 100,000 个节点，每个集群最多可达 2,400,000 个节点，但代价是牺牲了一些功能。这 `ontap-nas-economy`驱动程序不支持 Docker 卷粒度快照或克隆。
+
+
+NOTE: 这 `ontap-nas-economy`Docker Swarm 目前不支持该驱动程序，因为 Docker Swarm 无法协调跨多个节点的卷创建。
+
+这 `ontap-san-economy`驱动程序在自动管理的FlexVol卷的共享池中创建 Docker 卷作为ONTAP LUN。这样一来，每个FlexVol就不局限于一个 LUN，并且为 SAN 工作负载提供了更好的可扩展性。根据存储阵列的不同， ONTAP每个集群最多支持 16384 个 LUN。由于这些卷底层是 LUN，因此该驱动程序支持 Docker 卷粒度快照和克隆。
+
+选择 `ontap-nas-flexgroup`驱动程序可提高单个卷的并行处理能力，该卷可以增长到 PB 级，包含数十亿个文件。  FlexGroups 的一些理想用例包括 AI/ML/DL、大数据和分析、软件构建、流媒体、文件存储库等等。  Trident在配置FlexGroup卷时会使用分配给 SVM 的所有聚合。  Trident中的FlexGroup支持还需考虑以下几点：
+
+* 需要ONTAP版本 9.2 或更高版本。
+* 截至撰写本文时，FlexGroups 仅支持 NFS v3。
+* 建议为 SVM 启用 64 位 NFSv3 标识符。
+* 建议的最小FlexGroup成员/卷大小为 100 GiB。
+* FlexGroup卷不支持克隆。
+
+
+有关 FlexGroup 以及适合 FlexGroup 的工作负载的信息，请参阅以下内容： https://www.netapp.com/pdf.html?item=/media/12385-tr4571pdf.pdf["NetApp FlexGroup卷最佳实践和实施指南"^] 。
+
+为了在同一环境中获得高级功能和大规模部署，您可以运行多个 Docker Volume Plugin 实例，其中一个使用 `ontap-nas`以及另一个使用 `ontap-nas-economy`。
+
+
+
+=== 为Trident定制ONTAP角色
+
+您可以创建一个具有最低权限的ONTAP集群角色，这样您就不必使用ONTAP管理员角色在Trident中执行操作。在Trident后端配置中包含用户名时， Trident将使用您创建的ONTAP集群角色来执行操作。
+
+请参阅link:https://github.com/NetApp/trident/tree/master/contrib/ontap/trident_role["Trident自定义角色生成器"]有关创建Trident自定义角色的更多信息。
+
+[role="tabbed-block"]
+====
+.使用ONTAP CLI
+--
+. 使用以下命令创建新角色：
++
+`security login role create <role_name\> -cmddirname "command" -access all -vserver <svm_name\>`
+
+. 为Trident用户创建用户名：
++
+`security login create -username <user_name\> -application ontapi -authmethod password -role <name_of_role_in_step_1\> -vserver <svm_name\> -comment "user_description"`
+`security login create -username <user_name\> -application http -authmethod password -role <name_of_role_in_step_1\> -vserver <svm_name\> -comment "user_description"`
+
+. 将角色映射到用户：
++
+`security login modify username <user_name\> -vserver <svm_name\> -role <role_name\> -application ontapi -application console -authmethod <password\>`
+
+
+
+--
+.使用系统管理器
+--
+在ONTAP系统管理器中执行以下步骤：
+
+. *创建自定义角色*：
++
+.. 要在集群级别创建自定义角色，请选择“集群 > 设置”。
++
+（或者）要在 SVM 级别创建自定义角色，请选择“存储”>“存储虚拟机”> `required SVM` > 设置 > 用户和角色*。
+
+.. 选择“用户和角色”旁边的箭头图标（*->*）。
+.. 在“角色”下选择“+添加”。
+.. 定义角色规则，然后点击“保存”。
+
+
+. 将角色映射到Trident用户： + 在“用户和角色”页面上执行以下步骤：
++
+.. 在“用户”下方选择“添加”图标 *+*。
+.. 选择所需的用户名，然后在“角色”下拉菜单中选择角色。
+.. 单击“保存”。
+
+
+
+
+--
+====
+更多信息请参阅以下页面：
+
+* link:https://kb.netapp.com/on-prem/ontap/Ontap_OS/OS-KBs/FAQ__Custom_roles_for_administration_of_ONTAP["用于管理ONTAP的自定义角色"^]或者link:https://docs.netapp.com/us-en/ontap/authentication/define-custom-roles-task.html["定义自定义角色"^]
+* link:https://docs.netapp.com/us-en/ontap-automation/rest/rbac_roles_users.html#rest-api["与角色和用户协作"^]
+
+
+
+
+=== ONTAP配置文件示例
+
+.<code>ontap-nas</code>驱动程序的NFS示例
+[%collapsible]
+====
+[source, json]
+----
+{
+  "version": 1,
+  "storageDriverName": "ontap-nas",
+  "managementLIF": "10.0.0.1",
+  "dataLIF": "10.0.0.2",
+  "svm": "svm_nfs",
+  "username": "vsadmin",
+  "password": "password",
+  "aggregate": "aggr1",
+  "defaults": {
+    "size": "10G",
+    "spaceReserve": "none",
+    "exportPolicy": "default"
+  }
+}
+----
+====
+.<code>ontap-nas-flexgroup</code>驱动程序的NFS示例
+[%collapsible]
+====
+[source, json]
+----
+{
+  "version": 1,
+  "storageDriverName": "ontap-nas-flexgroup",
+  "managementLIF": "10.0.0.1",
+  "dataLIF": "10.0.0.2",
+  "svm": "svm_nfs",
+  "username": "vsadmin",
+  "password": "password",
+  "defaults": {
+    "size": "100G",
+    "spaceReserve": "none",
+    "exportPolicy": "default"
+  }
+}
+----
+====
+.<code>ontap-nas-economy</code> 驱动程序的 NFS 示例
+[%collapsible]
+====
+[source, json]
+----
+{
+  "version": 1,
+  "storageDriverName": "ontap-nas-economy",
+  "managementLIF": "10.0.0.1",
+  "dataLIF": "10.0.0.2",
+  "svm": "svm_nfs",
+  "username": "vsadmin",
+  "password": "password",
+  "aggregate": "aggr1"
+}
+----
+====
+.<code>ontap-san</code> 驱动程序的 iSCSI 示例
+[%collapsible]
+====
+[source, json]
+----
+{
+  "version": 1,
+  "storageDriverName": "ontap-san",
+  "managementLIF": "10.0.0.1",
+  "dataLIF": "10.0.0.3",
+  "svm": "svm_iscsi",
+  "username": "vsadmin",
+  "password": "password",
+  "aggregate": "aggr1",
+  "igroupName": "netappdvp"
+}
+----
+====
+.<code>ontap-san-economy</code> 驱动程序的 NFS 示例
+[%collapsible]
+====
+[source, json]
+----
+{
+  "version": 1,
+  "storageDriverName": "ontap-san-economy",
+  "managementLIF": "10.0.0.1",
+  "dataLIF": "10.0.0.3",
+  "svm": "svm_iscsi_eco",
+  "username": "vsadmin",
+  "password": "password",
+  "aggregate": "aggr1",
+  "igroupName": "netappdvp"
+}
+----
+====
+.<code>ontap-san</code> 驱动程序的 NVMe/TCP 示例
+[%collapsible]
+====
+[source, json]
+----
+{
+  "version": 1,
+  "backendName": "NVMeBackend",
+  "storageDriverName": "ontap-san",
+  "managementLIF": "10.0.0.1",
+  "svm": "svm_nvme",
+  "username": "vsadmin",
+  "password": "password",
+  "sanType": "nvme",
+  "useREST": true
+}
+----
+====
+.<code>ontap-san</code>驱动程序的SCSI over FC示例
+[%collapsible]
+====
+[source, json]
+----
+{
+  "version": 1,
+  "backendName": "ontap-san-backend",
+  "storageDriverName": "ontap-san",
+  "managementLIF": "10.0.0.1",
+  "sanType": "fcp",
+  "svm": "trident_svm",
+  "username": "vsadmin",
+  "password": "password",
+  "useREST": true
+}
+----
+====
+
+
+== Element软件配置
+
+除了全局配置值之外，在使用 Element 软件（NetApp HCI/ SolidFire）时，还可以使用这些选项。
+
+[cols="3*"]
+|===
+| 选项 | 描述 | 示例 
+
+
+| `Endpoint`  a| 
+https://<登录名>:<密码>@<mvip>/json-rpc/<元素版本>
+ a| 
+https://admin:admin@192.168.160.3/json-rpc/8.0
+
+
+
+| `SVIP`  a| 
+iSCSI IP 地址和端口
+ a| 
+10.0.0.7:3260
+
+
+
+| `TenantName`  a| 
+要使用的 SolidFireF 租户（如果未找到则创建）
+ a| 
+`docker`
+
+
+
+| `InitiatorIFace`  a| 
+将 iSCSI 流量限制在非默认接口时，请指定接口。
+ a| 
+`default`
+
+
+
+| `Types`  a| 
+QoS规范
+ a| 
+参见下面的示例
+
+
+
+| `LegacyNamePrefix`  a| 
+升级版Trident安装的前缀。如果您使用的是 1.3.2 之前的Trident版本，并且使用现有卷执行升级，则需要设置此值才能访问通过卷名称方法映射的旧卷。
+ a| 
+`netappdvp-`
+
+|===
+这 `solidfire-san`驱动程序不支持 Docker Swarm。
+
+
+
+=== 示例元素软件配置文件
+
+[source, json]
+----
+{
+  "version": 1,
+  "storageDriverName": "solidfire-san",
+  "Endpoint": "https://admin:admin@192.168.160.3/json-rpc/8.0",
+  "SVIP": "10.0.0.7:3260",
+  "TenantName": "docker",
+  "InitiatorIFace": "default",
+  "Types": [
+    {
+      "Type": "Bronze",
+      "Qos": {
+        "minIOPS": 1000,
+        "maxIOPS": 2000,
+        "burstIOPS": 4000
+      }
+    },
+    {
+      "Type": "Silver",
+      "Qos": {
+        "minIOPS": 4000,
+        "maxIOPS": 6000,
+        "burstIOPS": 8000
+      }
+    },
+    {
+      "Type": "Gold",
+      "Qos": {
+        "minIOPS": 6000,
+        "maxIOPS": 8000,
+        "burstIOPS": 10000
+      }
+    }
+  ]
+}
+----

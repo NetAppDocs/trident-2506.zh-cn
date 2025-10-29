@@ -1,0 +1,237 @@
+---
+sidebar: sidebar 
+permalink: trident-docker/volume-driver-options.html 
+keywords: create volumes, Trident, trident for docker, docker, docker volume, driver options, ontap, element volumes, cvs, cloud volumes service on gcp, azure netapp files 
+summary: 每个存储驱动程序都有一组不同的选项，您可以在创建卷时指定这些选项以自定义结果。请参阅下方适用于您配置的存储系统的选项。 
+---
+= 驱动程序特定音量选项
+:hardbreaks:
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+每个存储驱动程序都有一组不同的选项，您可以在创建卷时指定这些选项以自定义结果。请参阅下方适用于您配置的存储系统的选项。
+
+在创建卷操作期间使用这些选项非常简单。提供选项和值 `-o`CLI 操作期间的运算符。这些值会覆盖 JSON 配置文件中的任何等效值。
+
+
+
+== ONTAP容量选项
+
+NFS、iSCSI 和 FC 的卷创建选项包括以下几种：
+
+[cols="2*"]
+|===
+| 选项 | 描述 
+
+
+| `size`  a| 
+卷大小默认为 1 GiB。
+
+
+
+| `spaceReserve`  a| 
+容量配置方式可以是精简配置或厚配置，默认为精简配置。有效值为 `none`（精简配置）和 `volume`（厚配置）。
+
+
+
+| `snapshotPolicy`  a| 
+这将把快照策略设置为所需值。默认值为 `none`这意味着不会自动为该卷创建快照。除非存储管理员修改，否则所有ONTAP系统上都存在一个名为“default”的策略，该策略会创建并保留 6 个每小时快照、2 个每日快照和 2 个每周快照。可以通过浏览来恢复快照中保存的数据。 `.snapshot`卷中任意目录中的目录。
+
+
+
+| `snapshotReserve`  a| 
+这将把快照预留量设置为所需的百分比。默认值为空，这意味着如果您选择了 snapshotPolicy， ONTAP将选择 snapshotReserve（通常为 5%）；如果 snapshotPolicy 为 none，则 ONTAP 将选择 snapshotReserve（通常为 0%）。您可以在配置文件中为所有ONTAP后端设置默认 snapshotReserve 值，并且可以将其用作除 ontap-nas-economy 之外的所有ONTAP后端的卷创建选项。
+
+
+
+| `splitOnClone`  a| 
+克隆卷时，这将导致ONTAP立即将克隆卷与其父卷分离。默认值为 `false`。有些克隆卷的用例最好在创建后立即将克隆卷与其父卷分离，因为不太可能有机会提高存储效率。例如，克隆一个空数据库可以节省大量时间，但节省的存储空间却很少，因此最好立即拆分克隆。
+
+
+
+| `encryption`  a| 
+在新卷上启用NetApp卷加密 (NVE)；默认设置为 `false`。要使用此选项，必须在集群上获得 NVE 许可并启用 NVE。
+
+如果后端启用了 NAE，则在Trident中配置的任何卷都将启用 NAE。
+
+更多信息，请参阅：link:../trident-reco/security-reco.html["Trident如何与 NVE 和 NAE 协同工作"] 。
+
+
+
+| `tieringPolicy`  a| 
+设置卷要使用的分层策略。这决定了当数据变为不活动状态（冷数据）时，是否将其迁移到云层。
+
+|===
+以下附加选项仅适用于 NFS：
+
+[cols="2*"]
+|===
+| 选项 | 描述 
+
+
+| `unixPermissions`  a| 
+这控制卷本身的权限集。默认情况下，权限将设置为 ``---rwxr-xr-x`或者用数字表示法表示为 0755，并且 `root`将成为所有者。文本格式或数字格式均可。
+
+
+
+| `snapshotDir`  a| 
+将此设置为 `true`将使 `.snapshot`客户端访问该卷时可见的目录。默认值为 `false`这意味着可见性 `.snapshot`目录默认处于禁用状态。某些镜像，例如官方的 MySQL 镜像，在以下情况下无法按预期工作： `.snapshot`目录可见。
+
+
+
+| `exportPolicy`  a| 
+设置该卷要使用的导出策略。默认值为 `default`。
+
+
+
+| `securityStyle`  a| 
+设置用于访问卷的安全样式。默认值为 `unix`。有效值为 `unix`和 `mixed`。
+
+|===
+以下附加选项仅适用于 iSCSI：
+
+[cols="2*"]
+|===
+| 选项 | 描述 
+
+
+| `fileSystemType` | 设置用于格式化 iSCSI 卷的文件系统。默认值为 `ext4`。有效值为 `ext3`， `ext4` ， 和 `xfs`。 
+
+
+| `spaceAllocation` | 将其设置为 `false`将关闭 LUN 的空间分配功能。默认值为 `true`这意味着当卷空间不足且卷中的 LUN 无法接受写入时， ONTAP会通知主机。此选项还允许ONTAP在主机删除数据时自动回收空间。 
+|===
+
+
+=== 示例
+
+请看以下示例：
+
+* 创建一个 10 GiB 卷：
++
+[listing]
+----
+docker volume create -d netapp --name demo -o size=10G -o encryption=true
+----
+* 创建一个带有快照的 100 GiB 卷：
++
+[listing]
+----
+docker volume create -d netapp --name demo -o size=100G -o snapshotPolicy=default -o snapshotReserve=10
+----
+* 创建一个启用了 setUID 位的卷：
++
+[listing]
+----
+docker volume create -d netapp --name demo -o unixPermissions=4755
+----
+
+
+最小卷大小为 20 MiB。
+
+如果未指定快照保留，且快照策略为 `none`Trident使用 0% 的快照储备。
+
+* 创建一个没有快照策略和快照保留的卷：
++
+[listing]
+----
+docker volume create -d netapp --name my_vol --opt snapshotPolicy=none
+----
+* 创建一个没有快照策略且自定义快照保留比例为 10% 的卷：
++
+[listing]
+----
+docker volume create -d netapp --name my_vol --opt snapshotPolicy=none --opt snapshotReserve=10
+----
+* 创建一个具有快照策略和 10% 自定义快照保留空间的卷：
++
+[listing]
+----
+docker volume create -d netapp --name my_vol --opt snapshotPolicy=myPolicy --opt snapshotReserve=10
+----
+* 创建具有快照策略的卷，并接受 ONTAP 的默认快照保留（通常为 5%）：
++
+[listing]
+----
+docker volume create -d netapp --name my_vol --opt snapshotPolicy=myPolicy
+----
+
+
+
+
+== Element 软件音量选项
+
+Element 软件选项会显示与卷相关的大小和服务质量 (QoS) 策略。创建卷时，使用以下方式指定与其关联的 QoS 策略： `-o type=service_level`命名法。
+
+使用 Element 驱动程序定义 QoS 服务级别的第一步是创建至少一个类型，并在配置文件中指定与名称关联的最小、最大和突发 IOPS。
+
+Element软件的其他卷创建选项包括以下几种：
+
+[cols="2*"]
+|===
+| 选项 | 描述 
+
+
+| `size`  a| 
+卷的大小，默认为 1 GiB 或配置条目...“defaults”：{“size”：“5G”}。
+
+
+
+| `blocksize`  a| 
+可以使用 512 或 4096，默认值为 512 或配置项 DefaultBlockSize。
+
+|===
+
+
+=== 示例
+
+请参阅以下包含 QoS 定义的示例配置文件：
+
+[source, json]
+----
+{
+  "Types": [
+    {
+      "Type": "Bronze",
+      "Qos": {
+        "minIOPS": 1000,
+        "maxIOPS": 2000,
+        "burstIOPS": 4000
+      }
+    },
+    {
+      "Type": "Silver",
+      "Qos": {
+        "minIOPS": 4000,
+        "maxIOPS": 6000,
+        "burstIOPS": 8000
+      }
+    },
+    {
+      "Type": "Gold",
+      "Qos": {
+        "minIOPS": 6000,
+        "maxIOPS": 8000,
+        "burstIOPS": 10000
+      }
+    }
+  ]
+}
+----
+在上述配置中，我们有三个策略定义：青铜、白银和黄金。这些名称是随意起的。
+
+* 创建 10 GiB 黄金卷：
++
+[listing]
+----
+docker volume create -d solidfire --name sfGold -o type=Gold -o size=10G
+----
+* 创建 100 GiB 青铜卷：
++
+[listing]
+----
+docker volume create -d solidfire --name sfBronze -o type=Bronze -o size=100G
+----
+

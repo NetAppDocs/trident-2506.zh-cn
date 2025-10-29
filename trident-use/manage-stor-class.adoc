@@ -1,0 +1,100 @@
+---
+sidebar: sidebar 
+permalink: trident-use/manage-stor-class.html 
+keywords: storage class, manage storage class, storage classes, kubernetes storage classes 
+summary: 您可以查看现有存储类、设置默认存储类、识别存储类后端以及删除存储类。 
+---
+= 管理存储类
+:hardbreaks:
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+您可以查看现有存储类、设置默认存储类、识别存储类后端以及删除存储类。
+
+
+
+== 查看现有存储类
+
+* 要查看现有的 Kubernetes 存储类，请运行以下命令：
+
+
+[listing]
+----
+kubectl get storageclass
+----
+* 要查看 Kubernetes 存储类详细信息，请运行以下命令：
+
+
+[listing]
+----
+kubectl get storageclass <storage-class> -o json
+----
+* 要查看 Trident 的同步存储类，请运行以下命令：
+
+
+[listing]
+----
+tridentctl get storageclass
+----
+* 要查看 Trident 的同步存储类详细信息，请运行以下命令：
+
+
+[listing]
+----
+tridentctl get storageclass <storage-class> -o json
+----
+
+
+== 设置默认存储类
+
+Kubernetes 1.6 增加了设置默认存储类的功能。如果用户未在持久卷声明 (PVC) 中指定持久卷，则将使用此存储类来配置持久卷。
+
+* 通过设置注解来定义默认存储类 `storageclass.kubernetes.io/is-default-class`在存储类定义中设置为 true。根据规范，任何其他值或缺少注释均被解释为错误。
+* 您可以使用以下命令将现有存储类配置为默认存储类：
+
+
+[listing]
+----
+kubectl patch storageclass <storage-class-name> -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
+----
+* 同样，您可以使用以下命令移除默认的存储类注解：
+
+
+[listing]
+----
+kubectl patch storageclass <storage-class-name> -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}'
+----
+Trident安装程序包中也有一些包含此注释的示例。
+
+
+NOTE: 集群中一次只能存在一个默认存储类。从技术上讲，Kubernetes 并不阻止你拥有多个默认存储类，但它的行为就好像根本没有默认存储类一样。
+
+
+
+== 确定存储类的后端
+
+这是一个您可以使用 JSON 回答的问题示例： `tridentctl` Trident后端对象的输出。这使用 `jq`您可能需要先安装该实用程序。
+
+[listing]
+----
+tridentctl get storageclass -o json | jq  '[.items[] | {storageClass: .Config.name, backends: [.storage]|unique}]'
+----
+
+
+== 删除存储类
+
+要从 Kubernetes 中删除存储类，请运行以下命令：
+
+[listing]
+----
+kubectl delete storageclass <storage-class>
+----
+`<storage-class>`应该替换成你的存储类。
+
+通过此存储类别创建的任何持久卷都将保持不变， Trident将继续管理它们。
+
+
+NOTE: Trident强制执行空白 `fsType`因为它创造了大量的销量。对于 iSCSI 后端，建议强制执行 `parameters.fsType`在存储类中。您应该删除现有的 StorageClasses 并重新创建它们。 `parameters.fsType`指定的。

@@ -1,0 +1,216 @@
+---
+sidebar: sidebar 
+permalink: trident-reference/pod-security.html 
+keywords: psp, pss, scc, pod security, pod security standards, pod security policies, security context constraints 
+summary: 'Kubernetes Pod 安全标准 (PSS) 和 Pod 安全策略 (PSP) 定义了权限级别并限制了 Pod 的行为。 OpenShift 安全上下文约束 (SCC) 类似地定义了 OpenShift Kubernetes Engine 特有的 pod 限制。为了实现这种自定义功能， Trident会在安装过程中启用某些权限。' 
+---
+= Pod 安全标准 (PSS) 和安全上下文约束 (SCC)
+:hardbreaks:
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Kubernetes Pod 安全标准 (PSS) 和 Pod 安全策略 (PSP) 定义了权限级别并限制了 Pod 的行为。 OpenShift 安全上下文约束 (SCC) 类似地定义了 OpenShift Kubernetes Engine 特有的 pod 限制。为了实现这种自定义功能， Trident会在安装过程中启用某些权限。以下各节详细介绍了Trident设置的权限。
+
+
+NOTE: PSS 取代了 Pod 安全策略 (PSP)。 PSP 在 Kubernetes v1.21 中已被弃用，并将于 v1.25 中移除。更多信息，请参阅link:https://kubernetes.io/docs/concepts/security/["Kubernetes：安全性"]。
+
+
+
+== 必需的 Kubernetes 安全上下文和相关字段
+
+[cols=","]
+|===
+| 权限 | 描述 
+
+
+| 特权 | CSI 要求挂载点是双向的，这意味着Trident节点 pod 必须运行特权容器。更多信息，请参阅link:https://kubernetes.io/docs/concepts/storage/volumes/#mount-propagation["Kubernetes：挂载传播"]。 
+
+
+| 主机网络 | iSCSI守护进程需要它。 `iscsiadm`管理 iSCSI 挂载点，并使用主机网络与 iSCSI 守护进程通信。 
+
+
+| 主机 IPC | NFS 使用进程间通信 (IPC) 与 NFSD 进行通信。 
+
+
+| 主机 PID | 开始需要 `rpc-statd`适用于 NFS。  Trident会查询主机进程以确定是否 `rpc-statd`在挂载 NFS 卷之前运行。 
+
+
+| 功能 | 这 `SYS_ADMIN`该功能作为特权容器的默认功能的一部分提供。例如，Docker 为特权容器设置了以下功能：
+`CapPrm: 0000003fffffffff`
+`CapEff: 0000003fffffffff` 
+
+
+| 赛康普 | 在特权容器中，Seccomp 配置文件始终为“Unconfined”；因此，它无法在Trident中启用。 
+
+
+| SELinux | 在 OpenShift 上，特权容器运行在 `spc_t`（“超级特权容器”）域，而非特权容器则运行在……域中。 `container_t`领域。在 `containerd`， 和 `container-selinux`安装完成后，所有容器都在运行。 `spc_t`域，这实际上禁用了 SELinux。因此， Trident不会增加 `seLinuxOptions`到容器中。 
+
+
+| DAC | 特权容器必须以 root 用户身份运行。非特权容器以 root 用户身份运行，以访问 CSI 所需的 Unix 套接字。 
+|===
+
+
+== 舱体安全标准 (PSS)
+
+[cols=",,"]
+|===
+| 标签 | 描述 | 默认 
+
+
+| `pod-security.kubernetes.io/enforce`  `pod-security.kubernetes.io/enforce-version` | 允许将Trident控制器和节点添加到安装命名空间中。请勿更改命名空间标签。 | `enforce: privileged` 
+`enforce-version: <version of the current cluster or highest version of PSS tested.>` 
+|===
+
+WARNING: 更改命名空间标签可能会导致 Pod 无法调度，出现“创建时出错：...”或“警告：trident-csi-...”等错误。如果发生这种情况，请检查命名空间标签是否为 `privileged`已更改。如果是这样，请重新安装Trident。
+
+
+
+== Pod 安全策略 (PSP)
+
+[cols=",,"]
+|===
+| 字段 | 描述 | 默认 
+
+
+| `allowPrivilegeEscalation` | 特权容器必须允许权限提升。 | `true` 
+
+
+| `allowedCSIDrivers` | Trident不使用内联 CSI 临时卷。 | 空 
+
+
+| `allowedCapabilities` | 非特权Trident容器不需要比默认集更多的功能，而特权容器将被授予所有可能的功能。 | 空 
+
+
+| `allowedFlexVolumes` | Trident不使用link:https://github.com/kubernetes/community/blob/master/contributors/devel/sig-storage/flexvolume.md["FlexVolume驱动器"^]因此，它们不包含在允许的音量列表中。 | 空 
+
+
+| `allowedHostPaths` | Trident节点 pod 会挂载节点的根文件系统，因此设置此列表没有任何好处。 | 空 
+
+
+| `allowedProcMountTypes` | Trident不使用任何 `ProcMountTypes`。 | 空 
+
+
+| `allowedUnsafeSysctls` | Trident不需要任何不安全措施 `sysctls`。 | 空 
+
+
+| `defaultAddCapabilities` | 特权容器无需添加任何功能。 | 空 
+
+
+| `defaultAllowPrivilegeEscalation` | 权限提升权限是在每个Trident pod 中处理的。 | `false` 
+
+
+| `forbiddenSysctls` | 不 `sysctls`允许。 | 空 
+
+
+| `fsGroup` | Trident容器以root权限运行。 | `RunAsAny` 
+
+
+| `hostIPC` | 挂载 NFS 卷需要主机 IPC 与主机通信 `nfsd` | `true` 
+
+
+| `hostNetwork` | iscsiadm 需要主机网络才能与 iSCSI 守护进程通信。 | `true` 
+
+
+| `hostPID` | 需要主机 PID 来进行检查 `rpc-statd`正在节点上运行。 | `true` 
+
+
+| `hostPorts` | Trident不使用任何主机端口。 | 空 
+
+
+| `privileged` | Trident节点 pod 必须运行特权容器才能挂载卷。 | `true` 
+
+
+| `readOnlyRootFilesystem` | Trident节点 pod 必须写入节点文件系统。 | `false` 
+
+
+| `requiredDropCapabilities` | Trident节点 pod 运行的是特权容器，不能放弃任何功能。 | `none` 
+
+
+| `runAsGroup` | Trident容器以root权限运行。 | `RunAsAny` 
+
+
+| `runAsUser` | Trident容器以root权限运行。 | `runAsAny` 
+
+
+| `runtimeClass` | Trident不使用 `RuntimeClasses`。 | 空 
+
+
+| `seLinux` | Trident不设置 `seLinuxOptions`因为目前容器运行时和 Kubernetes 发行版在处理 SELinux 方面存在差异。 | 空 
+
+
+| `supplementalGroups` | Trident容器以root权限运行。 | `RunAsAny` 
+
+
+| `volumes` | Trident pods 需要这些音量插件。 | `hostPath, projected, emptyDir` 
+|===
+
+
+== 安全上下文约束 (SCC)
+
+[cols=",,"]
+|===
+| 标签 | 描述 | 默认 
+
+
+| `allowHostDirVolumePlugin` | Trident节点 pod 会挂载节点的根文件系统。 | `true` 
+
+
+| `allowHostIPC` | 挂载 NFS 卷需要主机 IPC 与主机通信 `nfsd`。 | `true` 
+
+
+| `allowHostNetwork` | iscsiadm 需要主机网络才能与 iSCSI 守护进程通信。 | `true` 
+
+
+| `allowHostPID` | 需要主机 PID 来进行检查 `rpc-statd`正在节点上运行。 | `true` 
+
+
+| `allowHostPorts` | Trident不使用任何主机端口。 | `false` 
+
+
+| `allowPrivilegeEscalation` | 特权容器必须允许权限提升。 | `true` 
+
+
+| `allowPrivilegedContainer` | Trident节点 pod 必须运行特权容器才能挂载卷。 | `true` 
+
+
+| `allowedUnsafeSysctls` | Trident不需要任何不安全措施 `sysctls`。 | `none` 
+
+
+| `allowedCapabilities` | 非特权Trident容器不需要比默认集更多的功能，而特权容器将被授予所有可能的功能。 | 空 
+
+
+| `defaultAddCapabilities` | 特权容器无需添加任何功能。 | 空 
+
+
+| `fsGroup` | Trident容器以root权限运行。 | `RunAsAny` 
+
+
+| `groups` | 此 SCC 专用于Trident ，并与其用户绑定。 | 空 
+
+
+| `readOnlyRootFilesystem` | Trident节点 pod 必须写入节点文件系统。 | `false` 
+
+
+| `requiredDropCapabilities` | Trident节点 pod 运行的是特权容器，不能放弃任何功能。 | `none` 
+
+
+| `runAsUser` | Trident容器以root权限运行。 | `RunAsAny` 
+
+
+| `seLinuxContext` | Trident不设置 `seLinuxOptions`因为目前容器运行时和 Kubernetes 发行版在处理 SELinux 方面存在差异。 | 空 
+
+
+| `seccompProfiles` | 特权容器始终以“非限制”模式运行。 | 空 
+
+
+| `supplementalGroups` | Trident容器以root权限运行。 | `RunAsAny` 
+
+
+| `users` | 提供了一个条目，用于将此 SCC 绑定到Trident命名空间中的Trident用户。 | 不适用 
+
+
+| `volumes` | Trident pods 需要这些音量插件。 | `hostPath, downwardAPI, projected, emptyDir` 
+|===

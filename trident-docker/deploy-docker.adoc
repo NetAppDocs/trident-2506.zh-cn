@@ -1,0 +1,278 @@
+---
+sidebar: sidebar 
+permalink: trident-docker/deploy-docker.html 
+keywords: deploy, Trident, trident for docker, docker 
+summary: Trident for Docker 为NetApp存储平台提供与 Docker 生态系统的直接集成。它支持从存储平台到 Docker 主机的存储资源的配置和管理，并提供了一个框架，以便将来添加其他平台。 
+---
+= 部署Trident
+:hardbreaks:
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Trident for Docker 为NetApp存储平台提供与 Docker 生态系统的直接集成。它支持从存储平台到 Docker 主机的存储资源的配置和管理，并提供了一个框架，以便将来添加其他平台。
+
+同一主机上可以同时运行多个Trident实例。这样就可以同时连接到多个存储系统和存储类型，并且可以自定义 Docker 卷使用的存储。
+
+.你需要什么
+查看link:prereqs-docker.html["部署的先决条件"]。确保满足先决条件后，即可部署Trident。
+
+
+
+== Docker 管理的插件方法（版本 1.13/17.03 及更高版本）
+
+.开始之前
+
+NOTE: 如果您之前在 Docker 1.13/17.03 之前的版本中使用过Trident 的传统守护进程方法，请确保在使用托管插件方法之前停止Trident进程并重新启动 Docker 守护进程。
+
+. 停止所有正在运行的实例：
++
+[source, console]
+----
+pkill /usr/local/bin/netappdvp
+pkill /usr/local/bin/trident
+----
+. 重启 Docker。
++
+[source, console]
+----
+systemctl restart docker
+----
+. 请确保您已安装 Docker Engine 17.03（新版本 1.13）或更高版本。
++
+[source, console]
+----
+docker --version
+----
++
+如果您的版本已过时， https://docs.docker.com/engine/install/["安装或更新您的安装程序"^] 。
+
+
+
+.步骤
+. 创建配置文件并按如下方式指定选项：
++
+**  `config`默认文件名是 `config.json`不过，您可以通过指定名称来使用您选择的任何名称。 `config`文件名选项。配置文件必须位于 `/etc/netappdvp`主机系统上的目录。
+** `log-level`：指定日志级别(`debug`， `info` ， `warn` ， `error` ， `fatal` ）。默认值为 `info`。
+** `debug`：指定是否启用调试日志记录。默认值为 false。如果为真，则覆盖日志级别。
++
+... 创建配置文件存放位置：
++
+[source, console]
+----
+sudo mkdir -p /etc/netappdvp
+----
+... 创建配置文件：
++
+[source, console]
+----
+cat << EOF > /etc/netappdvp/config.json
+----
++
+[source, json]
+----
+{
+  "version": 1,
+  "storageDriverName": "ontap-nas",
+  "managementLIF": "10.0.0.1",
+  "dataLIF": "10.0.0.2",
+  "svm": "svm_nfs",
+  "username": "vsadmin",
+  "password": "password",
+  "aggregate": "aggr1"
+}
+EOF
+----
+
+
+
+
+. 使用托管插件系统启动Trident 。代替 `<version>`使用您正在使用的插件版本（xxx.xx.x）。
++
+[source, console]
+----
+docker plugin install --grant-all-permissions --alias netapp netapp/trident-plugin:<version> config=myConfigFile.json
+----
+. 开始使用Trident从已配置的系统中获取存储空间。
++
+.. 创建一个名为“firstVolume”的卷：
++
+[source, console]
+----
+docker volume create -d netapp --name firstVolume
+----
+.. 容器启动时创建默认卷：
++
+[source, console]
+----
+docker run --rm -it --volume-driver netapp --volume secondVolume:/my_vol alpine ash
+----
+.. 移除音量“firstVolume”：
++
+[source, console]
+----
+docker volume rm firstVolume
+----
+
+
+
+
+
+
+== 传统方法（版本 1.12 或更早版本）
+
+.开始之前
+. 请确保您使用的是 Docker 版本 1.10 或更高版本。
++
+[source, console]
+----
+docker --version
+----
++
+如果您的版本过旧，请更新您的安装。
+
++
+[source, console]
+----
+curl -fsSL https://get.docker.com/ | sh
+----
++
+或者， https://docs.docker.com/engine/install/["请按照您的分发说明进行操作"^] 。
+
+. 请确保您的系统已配置 NFS 和/或 iSCSI。
+
+
+.步骤
+. 安装并配置NetApp Docker 卷插件：
++
+.. 下载并解压应用程序：
++
+[source, console]
+----
+wget https://github.com/NetApp/trident/releases/download/v25.06.0/trident-installer-25.06.0.tar.gz
+tar zxf trident-installer-25.06.0.tar.gz
+----
+.. 移动到回收站路径中的某个位置：
++
+[source, console]
+----
+sudo mv trident-installer/extras/bin/trident /usr/local/bin/
+sudo chown root:root /usr/local/bin/trident
+sudo chmod 755 /usr/local/bin/trident
+----
+.. 创建配置文件存放位置：
++
+[source, console]
+----
+sudo mkdir -p /etc/netappdvp
+----
+.. 创建配置文件：
++
+[source, console]
+----
+cat << EOF > /etc/netappdvp/ontap-nas.json
+----
++
+[source, json]
+----
+{
+  "version": 1,
+  "storageDriverName": "ontap-nas",
+  "managementLIF": "10.0.0.1",
+  "dataLIF": "10.0.0.2",
+  "svm": "svm_nfs",
+  "username": "vsadmin",
+  "password": "password",
+  "aggregate": "aggr1"
+}
+EOF
+----
+
+
+. 放置好二进制文件并创建配置文件后，使用所需的配置文件启动Trident守护进程。
++
+[source, console]
+----
+sudo trident --config=/etc/netappdvp/ontap-nas.json
+----
++
+
+NOTE: 除非另有指定，卷驱动程序的默认名称为“netapp”。
+
++
+守护进程启动后，您可以使用 Docker CLI 界面创建和管理卷。
+
+. 创建卷：
++
+[source, console]
+----
+docker volume create -d netapp --name trident_1
+----
+. 启动容器时配置 Docker 卷：
++
+[source, console]
+----
+docker run --rm -it --volume-driver netapp --volume trident_2:/my_vol alpine ash
+----
+. 删除 Docker 卷：
++
+[source, console]
+----
+docker volume rm trident_1
+----
++
+[source, console]
+----
+docker volume rm trident_2
+----
+
+
+
+
+== 系统启动时启动Trident
+
+systemd 系统的示例单元文件可在以下位置找到： `contrib/trident.service.example`在 Git 仓库中。要在 RHEL 系统中使用该文件，请执行以下操作：
+
+. 将文件复制到正确位置。
++
+如果运行多个实例，则应为单元文件使用唯一的名称。
+
++
+[source, console]
+----
+cp contrib/trident.service.example /usr/lib/systemd/system/trident.service
+----
+. 编辑该文件，将描述（第 2 行）更改为与驱动程序名称匹配，并将配置文件路径（第 9 行）更改为反映您的环境。
+. 重新加载 systemd 以使其吸收更改：
++
+[source, console]
+----
+systemctl daemon-reload
+----
+. 启用该服务。
++
+这个名称会根据你给文件命名的方式而有所不同。 `/usr/lib/systemd/system`目录。
+
++
+[source, console]
+----
+systemctl enable trident
+----
+. 启动服务。
++
+[source, console]
+----
+systemctl start trident
+----
+. 查看状态。
++
+[source, console]
+----
+systemctl status trident
+----
+
+
+
+NOTE: 每次修改单元文件后，请运行以下命令： `systemctl daemon-reload`命令使其能够感知这些变化。

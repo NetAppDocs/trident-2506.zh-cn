@@ -1,0 +1,150 @@
+---
+sidebar: sidebar 
+permalink: trident-use/trident-fsx.html 
+keywords: Amazon FSx for NetApp ONTAP, FSx for ONTAP, deploy Trident, integrate Trident, Trident 
+summary: '通过将Trident与Amazon FSx for NetApp ONTAP结合使用，您可以确保在 Amazon Elastic Kubernetes Service (EKS) 中运行的 Kubernetes 集群可以配置由ONTAP支持的块和文件持久卷。' 
+---
+= 将Trident与Amazon FSx for NetApp ONTAP
+:hardbreaks:
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/what-is-fsx-ontap.html["Amazon FSx for NetApp ONTAP"^]是一项完全托管的 AWS 服务，使客户能够启动和运行由NetApp ONTAP存储操作系统支持的文件系统。  FSx for ONTAP使您能够利用您熟悉的NetApp功能、性能和管理能力，同时享受在 AWS 上存储数据的简单性、敏捷性、安全性和可扩展性。  FSx for ONTAP支持ONTAP文件系统功能和管理 API。
+
+您可以将Amazon FSx for NetApp ONTAP文件系统与Trident集成，以确保在 Amazon Elastic Kubernetes Service (EKS) 中运行的 Kubernetes 集群可以配置由ONTAP支持的块和文件持久卷。
+
+文件系统是Amazon FSx中的主要资源，类似于本地的ONTAP集群。在每个 SVM 中，您可以创建一个或多个卷，这些卷是用于存储文件系统中的文件和文件夹的数据容器。 Amazon FSx for NetApp ONTAP将作为云端托管文件系统提供。新的文件系统类型称为 * NetApp ONTAP*。
+
+通过将Trident与Amazon FSx for NetApp ONTAP结合使用，您可以确保在 Amazon Elastic Kubernetes Service (EKS) 中运行的 Kubernetes 集群可以配置由ONTAP支持的块和文件持久卷。
+
+
+
+== 要求
+
+此外link:../trident-get-started/requirements.html["Trident的要求"]要将 FSx for ONTAP与Trident集成，您需要：
+
+* 现有的 Amazon EKS 集群或自管理 Kubernetes 集群 `kubectl`已安装。
+* 集群工作节点可访问的现有Amazon FSx for NetApp ONTAP文件系统和存储虚拟机 (SVM)。
+* 已准备好的工作节点link:worker-node-prep.html["NFS 或 iSCSI"]。
++
+
+NOTE: 请务必按照 Amazon Linux 和 Ubuntu 所需的节点准备步骤进行操作。 https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/AMIs.html["亚马逊机器图像"^] （AMI）取决于您的 EKS AMI 类型。
+
+
+
+
+
+== 注意事项
+
+* SMB 卷：
++
+** 使用以下方式支持 SMB 卷 `ontap-nas`仅限司机。
+** Trident EKS 插件不支持 SMB 卷。
+** Trident仅支持挂载到运行在 Windows 节点上的 pod 的 SMB 卷。参考 link:../trident-use/trident-fsx-storage-backend.html#prepare-to-provision-smb-volumes["准备配置SMB卷"] 了解详情。
+
+
+* 在Trident 24.02 之前，在Amazon FSx文件系统上创建的、启用了自动备份的卷无法被Trident删除。为防止在Trident 24.02 或更高版本中出现此问题，请指定 `fsxFilesystemID`，AWS `apiRegion` ，AWS `apikey`以及 AWS `secretKey`在 AWS FSx for ONTAP的后端配置文件中。
++
+
+NOTE: 如果您要为Trident指定 IAM 角色，则可以省略指定以下内容： `apiRegion` ， `apiKey` ， 和 `secretKey`明确地将字段传递给Trident 。更多信息，请参阅link:../trident-use/trident-fsx-examples.html["FSx for ONTAP配置选项和示例"]。
+
+
+
+
+
+=== 同时使用Trident SAN/iSCSI 和 EBS-CSI 驱动程序
+
+如果您计划将 ontap-san 驱动程序（例如 iSCSI）与 AWS（EKS、ROSA、EC2 或任何其他实例）一起使用，则节点上所需的多路径配置可能会与 Amazon Elastic Block Store (EBS) CSI 驱动程序冲突。为了确保多路径功能不会干扰同一节点上的 EBS 磁盘，您需要在多路径设置中排除 EBS。这个例子展示了 `multipath.conf`包含所需Trident设置但排除 EBS 磁盘进行多路径配置的文件：
+
+[listing]
+----
+defaults {
+    find_multipaths no
+}
+blacklist {
+    device {
+        vendor "NVME"
+        product "Amazon Elastic Block Store"
+    }
+}
+----
+
+
+== 身份验证
+
+Trident提供两种身份验证方式。
+
+* 基于凭证（推荐）：将凭证安全地存储在 AWS Secrets Manager 中。您可以使用 `fsxadmin`文件系统的用户或 `vsadmin`用户已配置到您的 SVM。
++
+
+WARNING: Trident预计将以……的形式运营 `vsadmin`SVM 用户，或者使用具有相同角色但名称不同的用户。 Amazon FSx for NetApp ONTAP具有 `fsxadmin`该用户是ONTAP的有限替代品 `admin`集群用户。我们强烈建议使用 `vsadmin`用Trident。
+
+* 基于证书： Trident将使用安装在 SVM 上的证书与 FSx 文件系统上的 SVM 进行通信。
+
+
+有关启用身份验证的详细信息，请参阅您的驱动程序类型的身份验证说明：
+
+* link:ontap-nas-prep.html["ONTAP NAS 认证"]
+* link:ontap-san-prep.html["ONTAP SAN 身份验证"]
+
+
+
+
+== 已测试的亚马逊机器映像 (AMI)
+
+EKS 集群支持各种操作系统，但 AWS 针对容器和 EKS 优化了某些 Amazon Machine Image (AMI)。以下 AMI 已使用NetApp Trident 25.02 进行测试。
+
+|===
+
+
+| 急性心肌梗死 | NAS | NAS经济 | iSCSI | iSCSI经济型 
+
+
+| AL2023_x86_64_STANDARD | 是 | 是 | 是 | 是 
+
+
+| AL2_x86_64 | 是 | 是 | 是的* | 是的* 
+
+
+| BOTTLEROCKET_x86_64 | 是的** | 是 | 不适用 | 不适用 
+
+
+| AL2023_ARM_64_STANDARD | 是 | 是 | 是 | 是 
+
+
+| AL2_ARM_64 | 是 | 是 | 是的* | 是的* 
+
+
+| BOTTLEROCKET_ARM_64 | 是的** | 是 | 不适用 | 不适用 
+|===
+* * 如果不重启节点，则无法删除 PV
+* ** 不适用于Trident版本 25.02 的 NFSv3。
+
+
+
+NOTE: 如果您所需的 AMI 未在此处列出，并不意味着它不受支持；这仅仅意味着它尚未经过测试。此列表可作为 AMI 已知可用系统的指南。
+
+*使用以下工具进行测试：*
+
+* EKS版本：1.32
+* 安装方法：Helm 25.06 和 AWS 附加组件 25.06
+* 对于 NAS，NFSv3 和 NFSv4.1 都进行了测试。
+* SAN 仅测试了 iSCSI，未测试 NVMe-oF。
+
+
+*已执行测试*：
+
+* 创建：存储类、PVC、Pod
+* 删除：pod、pvc（常规、qtree/lun – 经济型、带 AWS 备份的 NAS）
+
+
+
+
+== 查找更多信息
+
+* https://docs.aws.amazon.com/fsx/latest/ONTAPGuide/what-is-fsx-ontap.html["Amazon FSx for NetApp ONTAP文档"^]
+* https://www.netapp.com/blog/amazon-fsx-for-netapp-ontap/["关于Amazon FSx for NetApp ONTAP的博客文章"^]
+

@@ -1,0 +1,65 @@
+---
+sidebar: sidebar 
+permalink: trident-protect/trident-protect-upgrade.html 
+keywords: trident, protect, netapp, upgrade, new, version 
+summary: 您可以将Trident Protect 升级到最新版本，以享受新功能或修复错误。 
+---
+= 升级Trident保护
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ../media/
+
+
+[role="lead"]
+您可以将Trident Protect 升级到最新版本，以享受新功能或修复错误。
+
+[NOTE]
+====
+从 24.10 版本升级时，升级期间运行的快照可能会失败。此故障不会阻止将来创建快照，无论是手动创建还是计划创建。如果在升级过程中快照失败，您可以手动创建一个新的快照，以确保您的应用程序受到保护。
+
+为避免潜在的故障，您可以在升级前禁用所有快照计划，并在升级后重新启用它们。但是，这会导致在升级期间错过任何计划的快照。
+
+====
+要升级Trident Protect，请执行以下步骤。
+
+.步骤
+. 更新Trident Helm 仓库：
++
+[source, console]
+----
+helm repo update
+----
+. 升级Trident保护 CRD：
++
+
+NOTE: 如果您是从 25.06 之前的版本升级，则需要执行此步骤，因为 CRD 现在包含在Trident protect Helm 图表中。
+
++
+.. 运行此命令以将 CRD 的管理权从 `trident-protect-crds`到 `trident-protect`：
++
+[source, console]
+----
+kubectl get crd | grep protect.trident.netapp.io | awk '{print $1}' | xargs -I {} kubectl patch crd {} --type merge -p '{"metadata":{"annotations":{"meta.helm.sh/release-name": "trident-protect"}}}'
+----
+.. 运行此命令以删除 Helm 密钥 `trident-protect-crds`图表：
++
+
+NOTE: 不要卸载 `trident-protect-crds`使用 Helm 构建图表可能会删除您的 CRD 和任何相关数据。
+
++
+[source, console]
+----
+kubectl delete secret -n trident-protect -l name=trident-protect-crds,owner=helm
+----
+
+
+. 升级Trident保护：
++
+[source, console]
+----
+helm upgrade trident-protect netapp-trident-protect/trident-protect --version 100.2506.0 --namespace trident-protect
+----
+

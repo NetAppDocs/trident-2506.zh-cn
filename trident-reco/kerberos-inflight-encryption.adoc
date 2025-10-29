@@ -1,0 +1,396 @@
+---
+sidebar: sidebar 
+permalink: trident-reco/kerberos-inflight-encryption.html 
+keywords: Trident, backend, storage, encryption, kerberos 
+summary: 您可以配置加密来保护Trident和您的存储后端之间的流量。 
+---
+= Kerberos 飞行中加密
+:hardbreaks:
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+使用 Kerberos 传输中加密，您可以对托管集群和存储后端之间的流量启用加密，从而提高数据访问安全性。
+
+Trident支持以ONTAP作为存储后端的 Kerberos 加密：
+
+* *本地ONTAP* - Trident支持通过 NFSv3 和 NFSv4 连接对来自 Red Hat OpenShift 和上游 Kubernetes 集群的本地ONTAP卷进行 Kerberos 加密。
+
+
+您可以创建、删除、调整大小、创建快照、克隆、只读克隆和导入使用 NFS 加密的卷。
+
+
+
+== 配置本地ONTAP卷的飞行中 Kerberos 加密
+
+您可以为托管集群和本地ONTAP存储后端之间的存储流量启用 Kerberos 加密。
+
+
+NOTE: 仅使用以下方式支持对本地ONTAP存储后端的 NFS 流量进行 Kerberos 加密： `ontap-nas`存储驱动程序。
+
+.开始之前
+* 确保您可以访问 `tridentctl`公用事业。
+* 请确保您拥有ONTAP存储后端的管理员权限。
+* 请确保您知道要从ONTAP存储后端共享的卷的名称。
+* 请确保您已准备好ONTAP存储 VM，以支持 NFS 卷的 Kerberos 加密。请参阅 https://docs.netapp.com/us-en/ontap/nfs-config/create-kerberos-config-task.html["在数据 LIF 上启用 Kerberos"^]以获取说明。
+* 请确保所有与 Kerberos 加密一起使用的 NFSv4 卷都已正确配置。请参阅NetApp NFSv4 域配置部分（第 13 页）。 https://www.netapp.com/media/16398-tr-3580.pdf["NetApp NFSv4 增强功能和最佳实践指南"^] 。
+
+
+
+
+=== 添加或修改ONTAP导出策略
+
+您需要向现有的ONTAP导出策略添加规则，或者创建新的导出策略，以支持对ONTAP存储 VM 根卷以及与上游 Kubernetes 集群共享的任何ONTAP卷进行 Kerberos 加密。您添加的导出策略规则或您创建的新导出策略需要支持以下访问协议和访问权限：
+
+.访问协议
+配置导出策略，支持 NFS、NFSv3 和 NFSv4 访问协议。
+
+.访问详情
+您可以根据卷的需求配置三种不同版本的 Kerberos 加密之一：
+
+* *Kerberos 5* - （身份验证和加密）
+* *Kerberos 5i* - （身份验证和加密，具有身份保护功能）
+* *Kerberos 5p* - （身份验证和加密，提供身份和隐私保护）
+
+
+配置ONTAP导出策略规则，使其具有适当的访问权限。例如，如果集群将使用 Kerberos 5i 和 Kerberos 5p 混合加密方式挂载 NFS 卷，请使用以下访问设置：
+
+|===
+| 类型 | 只读访问权限 | 读/写权限 | 超级用户访问权限 
+
+
+| UNIX | 已启用 | 已启用 | 已启用 
+
+
+| Kerberos 5i | 已启用 | 已启用 | 已启用 
+
+
+| Kerberos 5p | 已启用 | 已启用 | 已启用 
+|===
+有关如何创建ONTAP导出策略和导出策略规则，请参阅以下文档：
+
+* https://docs.netapp.com/us-en/ontap/nfs-config/create-export-policy-task.html["创建导出策略"^]
+* https://docs.netapp.com/us-en/ontap/nfs-config/add-rule-export-policy-task.html["向导出策略添加规则"^]
+
+
+
+
+=== 创建存储后端
+
+您可以创建包含 Kerberos 加密功能的Trident存储后端配置。
+
+.关于此任务
+创建配置 Kerberos 加密的存储后端配置文件时，可以使用以下方式指定三种不同版本的 Kerberos 加密之一： `spec.nfsMountOptions`范围：
+
+* `spec.nfsMountOptions: sec=krb5`（身份验证和加密）
+* `spec.nfsMountOptions: sec=krb5i`（身份验证和加密，以及身份保护）
+* `spec.nfsMountOptions: sec=krb5p`（身份验证和加密，以及身份和隐私保护）
+
+
+只能指定一个 Kerberos 级别。如果在参数列表中指定多个 Kerberos 加密级别，则仅使用第一个选项。
+
+.步骤
+. 在托管集群上，使用以下示例创建存储后端配置文件。将方括号 <> 中的值替换为您环境中的信息：
++
+[source, yaml]
+----
+apiVersion: v1
+kind: Secret
+metadata:
+  name: backend-ontap-nas-secret
+type: Opaque
+stringData:
+  clientID: <CLIENT_ID>
+  clientSecret: <CLIENT_SECRET>
+---
+apiVersion: trident.netapp.io/v1
+kind: TridentBackendConfig
+metadata:
+  name: backend-ontap-nas
+spec:
+  version: 1
+  storageDriverName: "ontap-nas"
+  managementLIF: <STORAGE_VM_MGMT_LIF_IP_ADDRESS>
+  dataLIF: <PROTOCOL_LIF_FQDN_OR_IP_ADDRESS>
+  svm: <STORAGE_VM_NAME>
+  username: <STORAGE_VM_USERNAME_CREDENTIAL>
+  password: <STORAGE_VM_PASSWORD_CREDENTIAL>
+  nasType: nfs
+  nfsMountOptions: ["sec=krb5i"] #can be krb5, krb5i, or krb5p
+  qtreesPerFlexvol:
+  credentials:
+    name: backend-ontap-nas-secret
+----
+. 使用上一步创建的配置文件创建后端：
++
+[source, console]
+----
+tridentctl create backend -f <backend-configuration-file>
+----
++
+如果后端创建失败，则后端配置存在问题。您可以通过运行以下命令查看日志以确定原因：
+
++
+[source, console]
+----
+tridentctl logs
+----
++
+在您发现并纠正配置文件中的问题后，您可以再次运行创建命令。
+
+
+
+
+
+=== 创建存储类
+
+您可以创建存储类来配置具有 Kerberos 加密的卷。
+
+.关于此任务
+创建存储类对象时，可以使用以下方式指定三种不同版本的 Kerberos 加密之一： `mountOptions`范围：
+
+* `mountOptions: sec=krb5`（身份验证和加密）
+* `mountOptions: sec=krb5i`（身份验证和加密，以及身份保护）
+* `mountOptions: sec=krb5p`（身份验证和加密，以及身份和隐私保护）
+
+
+只能指定一个 Kerberos 级别。如果在参数列表中指定多个 Kerberos 加密级别，则仅使用第一个选项。如果在存储后端配置中指定的加密级别与在存储类对象中指定的加密级别不同，则以存储类对象为准。
+
+.步骤
+. 创建一个 StorageClass Kubernetes 对象，请参考以下示例：
++
+[source, yaml]
+----
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: ontap-nas-sc
+provisioner: csi.trident.netapp.io
+mountOptions:
+  - sec=krb5i #can be krb5, krb5i, or krb5p
+parameters:
+  backendType: ontap-nas
+  storagePools: ontapnas_pool
+  trident.netapp.io/nasType: nfs
+allowVolumeExpansion: true
+
+----
+. 创建存储类：
++
+[source, console]
+----
+kubectl create -f sample-input/storage-class-ontap-nas-sc.yaml
+----
+. 请确保已创建存储类：
++
+[source, console]
+----
+kubectl get sc ontap-nas-sc
+----
++
+您应该会看到类似以下内容的输出：
+
++
+[listing]
+----
+NAME         PROVISIONER             AGE
+ontap-nas-sc    csi.trident.netapp.io   15h
+----
+
+
+
+
+=== 供应量
+
+创建存储后端和存储类之后，现在可以配置卷了。有关说明，请参阅 https://docs.netapp.com/us-en/trident/trident-use/vol-provision.html["提供一定量"^]。
+
+
+
+== 使用Azure NetApp Files卷配置飞行中 Kerberos 加密
+
+您可以为托管群集与单个Azure NetApp Files存储后端或Azure NetApp Files存储后端虚拟池之间的存储流量启用 Kerberos 加密。
+
+.开始之前
+* 请确保已在受管 Red Hat OpenShift 集群上启用Trident 。
+* 确保您可以访问 `tridentctl`公用事业。
+* 请确保您已按照以下说明准备好Azure NetApp Files存储后端以进行 Kerberos 加密：注意相关要求并按照说明进行操作。 https://learn.microsoft.com/en-us/azure/azure-netapp-files/configure-kerberos-encryption["Azure NetApp Files文档"^] 。
+* 请确保所有与 Kerberos 加密一起使用的 NFSv4 卷都已正确配置。请参阅NetApp NFSv4 域配置部分（第 13 页）。 https://www.netapp.com/media/16398-tr-3580.pdf["NetApp NFSv4 增强功能和最佳实践指南"^] 。
+
+
+
+
+=== 创建存储后端
+
+您可以创建包含 Kerberos 加密功能的Azure NetApp Files存储后端配置。
+
+.关于此任务
+创建配置 Kerberos 加密的存储后端配置文件时，您可以将其定义为应用于以下两个级别之一：
+
+* 使用*存储后端级别* `spec.kerberos`场地
+* 使用*虚拟池级别* `spec.storage.kerberos`场地
+
+
+在虚拟池级别定义配置时，使用存储类中的标签选择池。
+
+无论在哪个级别，您都可以指定三种不同版本的 Kerberos 加密之一：
+
+* `kerberos: sec=krb5`（身份验证和加密）
+* `kerberos: sec=krb5i`（身份验证和加密，以及身份保护）
+* `kerberos: sec=krb5p`（身份验证和加密，以及身份和隐私保护）
+
+
+.步骤
+. 在托管集群上，根据您需要定义存储后端的位置（存储后端级别或虚拟池级别），使用以下示例之一创建存储后端配置文件。将方括号 <> 中的值替换为您环境中的信息：
++
+[role="tabbed-block"]
+====
+.存储后端示例
+--
+[source, yaml]
+----
+apiVersion: v1
+kind: Secret
+metadata:
+  name: backend-tbc-secret
+type: Opaque
+stringData:
+  clientID: <CLIENT_ID>
+  clientSecret: <CLIENT_SECRET>
+
+---
+apiVersion: trident.netapp.io/v1
+kind: TridentBackendConfig
+metadata:
+  name: backend-tbc
+spec:
+  version: 1
+  storageDriverName: azure-netapp-files
+  subscriptionID: <SUBSCRIPTION_ID>
+  tenantID: <TENANT_ID>
+  location: <AZURE_REGION_LOCATION>
+  serviceLevel: Standard
+  networkFeatures: Standard
+  capacityPools: <CAPACITY_POOL>
+  resourceGroups: <RESOURCE_GROUP>
+  netappAccounts: <NETAPP_ACCOUNT>
+  virtualNetwork: <VIRTUAL_NETWORK>
+  subnet: <SUBNET>
+  nasType: nfs
+  kerberos: sec=krb5i #can be krb5, krb5i, or krb5p
+  credentials:
+    name: backend-tbc-secret
+----
+--
+.虚拟池级别示例
+--
+[source, yaml]
+----
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: backend-tbc-secret
+type: Opaque
+stringData:
+  clientID: <CLIENT_ID>
+  clientSecret: <CLIENT_SECRET>
+
+---
+apiVersion: trident.netapp.io/v1
+kind: TridentBackendConfig
+metadata:
+  name: backend-tbc
+spec:
+  version: 1
+  storageDriverName: azure-netapp-files
+  subscriptionID: <SUBSCRIPTION_ID>
+  tenantID: <TENANT_ID>
+  location: <AZURE_REGION_LOCATION>
+  serviceLevel: Standard
+  networkFeatures: Standard
+  capacityPools: <CAPACITY_POOL>
+  resourceGroups: <RESOURCE_GROUP>
+  netappAccounts: <NETAPP_ACCOUNT>
+  virtualNetwork: <VIRTUAL_NETWORK>
+  subnet: <SUBNET>
+  nasType: nfs
+  storage:
+    - labels:
+        type: encryption
+      kerberos: sec=krb5i #can be krb5, krb5i, or krb5p
+  credentials:
+    name: backend-tbc-secret
+
+----
+--
+====
+. 使用上一步创建的配置文件创建后端：
++
+[source, console]
+----
+tridentctl create backend -f <backend-configuration-file>
+----
++
+如果后端创建失败，则后端配置存在问题。您可以通过运行以下命令查看日志以确定原因：
+
++
+[source, console]
+----
+tridentctl logs
+----
++
+在您发现并纠正配置文件中的问题后，您可以再次运行创建命令。
+
+
+
+
+
+=== 创建存储类
+
+您可以创建存储类来配置具有 Kerberos 加密的卷。
+
+.步骤
+. 创建一个 StorageClass Kubernetes 对象，请参考以下示例：
++
+[source, yaml]
+----
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: sc-nfs
+provisioner: csi.trident.netapp.io
+parameters:
+  backendType: azure-netapp-files
+  trident.netapp.io/nasType: nfs
+  selector: type=encryption
+----
+. 创建存储类：
++
+[source, console]
+----
+kubectl create -f sample-input/storage-class-sc-nfs.yaml
+----
+. 请确保已创建存储类：
++
+[source, console]
+----
+kubectl get sc -sc-nfs
+----
++
+您应该会看到类似以下内容的输出：
+
++
+[listing]
+----
+NAME         PROVISIONER             AGE
+sc-nfs       csi.trident.netapp.io   15h
+----
+
+
+
+
+=== 供应量
+
+创建存储后端和存储类之后，现在可以配置卷了。有关说明，请参阅 https://docs.netapp.com/us-en/trident/trident-use/vol-provision.html["提供一定量"^]。

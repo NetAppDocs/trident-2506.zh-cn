@@ -1,0 +1,85 @@
+---
+sidebar: sidebar 
+permalink: trident-docker/multiple-instances-docker.html 
+keywords: deploy, Trident, docker, trident for docker, managed plugin, trident instances, alias 
+summary: 当您需要同时拥有多个存储配置时，需要多个Trident实例。实现多个实例的关键在于使用容器化插件的 --alias 选项为它们指定不同的名称，或者在主机上实例化Trident时使用 --volume-driver 选项为它们指定不同的名称。 
+---
+= 管理多个Trident实例
+:hardbreaks:
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+当您需要同时拥有多个存储配置时，需要多个Trident实例。实现多个实例的关键在于使用不同的名称来命名它们。 `--alias`使用容器化插件的选项，或者 `--volume-driver`在主机上实例化Trident时的选择。
+
+
+
+== Docker 管理插件（版本 1.13/17.03 或更高版本）的步骤
+
+. 启动第一个实例时，指定别名和配置文件。
++
+[source, console]
+----
+docker plugin install --grant-all-permissions --alias silver netapp/trident-plugin:21.07 config=silver.json
+----
+. 启动第二个实例，指定不同的别名和配置文件。
++
+[source, console]
+----
+docker plugin install --grant-all-permissions --alias gold netapp/trident-plugin:21.07 config=gold.json
+----
+. 创建卷时，将别名指定为驱动程序名称。
++
+例如，黄金交易量：
+
++
+[source, console]
+----
+docker volume create -d gold --name ntapGold
+----
++
+例如，对于白银交易量而言：
+
++
+[source, console]
+----
+docker volume create -d silver --name ntapSilver
+----
+
+
+
+
+== 传统方法（版本 1.12 或更早版本）的步骤
+
+. 使用自定义驱动程序 ID 通过 NFS 配置启动插件：
++
+[source, console]
+----
+sudo trident --volume-driver=netapp-nas --config=/path/to/config-nfs.json
+----
+. 使用自定义驱动程序 ID 和 iSCSI 配置启动插件：
++
+[source, console]
+----
+sudo trident --volume-driver=netapp-san --config=/path/to/config-iscsi.json
+----
+. 为每个驱动程序实例配置 Docker 卷：
++
+例如，对于 NFS：
+
++
+[source, console]
+----
+docker volume create -d netapp-nas --name my_nfs_vol
+----
++
+例如，对于 iSCSI：
+
++
+[source, console]
+----
+docker volume create -d netapp-san --name my_iscsi_vol
+----
+

@@ -1,0 +1,89 @@
+---
+sidebar: sidebar 
+permalink: trident-get-started/architecture.html 
+keywords: trident backend, AFF, FAS, ONTAP Select, Cloud, Amazon FSx for NetApp ONTAP, drivers, ONTAP drivers 
+summary: Trident以单个 Controller Pod 和集群中每个工作节点上的 Node Pod 的形式运行。节点 pod 必须运行在您希望挂载Trident卷的任何主机上。 
+---
+= Trident架构
+:hardbreaks:
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Trident以单个 Controller Pod 和集群中每个工作节点上的 Node Pod 的形式运行。节点 pod 必须运行在您希望挂载Trident卷的任何主机上。
+
+
+
+== 了解控制器 pod 和节点 pod
+
+Trident以单个部署。<<Trident控制器舱>>以及一个或多个<<Trident节点 Pod>>在 Kubernetes 集群上，并使用标准的 Kubernetes _CSI Sidecar Containers_ 来简化 CSI 插件的部署。link:https://kubernetes-csi.github.io/docs/sidecar-containers.html["Kubernetes CSI Sidecar 容器"^]由 Kubernetes 存储社区维护。
+
+Kuberneteslink:https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/["节点选择器"^]和link:https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/["容忍与污点"^]用于限制 pod 在特定或首选节点上运行。在Trident安装过程中，您可以为控制器和节点 pod 配置节点选择器和容差。
+
+* 控制器插件负责卷的配置和管理，例如快照和调整大小。
+* 节点插件负责将存储连接到节点。
+
+
+.Trident已部署在 Kubernetes 集群上
+image::../media/trident-arch.png[Kubernetes 集群上的Trident架构图。]
+
+
+
+=== Trident控制器舱
+
+Trident Controller Pod 是一个运行 CSI Controller 插件的单个 Pod。
+
+* 负责在NetApp存储中配置和管理卷
+* 由 Kubernetes 部署管理
+* 根据安装参数的不同，可以在控制平面或工作节点上运行。
+
+
+.Trident控制器舱示意图
+image::../media/controller-pod.png[运行 CSI 控制器插件及适用 CSI 边车的Trident控制器 Pod 的示意图。]
+
+
+
+=== Trident节点 Pod
+
+Trident Node Pod 是运行 CSI Node 插件的特权 Pod。
+
+* 负责挂载和卸载主机上运行的 Pod 的存储设备
+* 由 Kubernetes DaemonSet 管理
+* 必须在任何能够挂载NetApp存储的节点上运行
+
+
+.Trident节点舱示意图
+image::../media/node-pod.png[运行 CSI Node 插件及适用 CSI sidecar 的Trident Node Pod 示意图。]
+
+
+
+== 支持的 Kubernetes 集群架构
+
+Trident支持以下 Kubernetes 架构：
+
+[cols="3,1,2"]
+|===
+| Kubernetes集群架构 | 支持 | 默认安装 
+
+
+| 单主控计算 | 是  a| 
+是
+
+
+
+| 多主计算 | 是  a| 
+是
+
+
+
+| 掌握， `etcd`计算 | 是  a| 
+是
+
+
+
+| 主控、基础设施、计算 | 是  a| 
+是
+
+|===

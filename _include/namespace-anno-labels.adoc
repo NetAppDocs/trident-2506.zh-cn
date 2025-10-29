@@ -1,0 +1,86 @@
+= 恢复和故障转移操作期间的命名空间注释和标签
+:allow-uri-read: 
+
+
+
+
+== 恢复和故障转移操作期间的命名空间注释和标签
+
+在恢复和故障转移操作期间，目标命名空间中的标签和注释将与源命名空间中的标签和注释相匹配。源命名空间中不存在的目标命名空间中的标签或注释将被添加，并且任何已存在的标签或注释都将被覆盖以匹配源命名空间中的值。仅存在于目标命名空间中的标签或注释保持不变。
+
+
+NOTE: 如果您使用 Red Hat OpenShift，请务必注意命名空间注释在 OpenShift 环境中的重要作用。命名空间注释确保恢复的 pod 遵守 OpenShift 安全上下文约束 (SCC) 定义的适当权限和安全配置，并且可以访问卷而不会出现权限问题。欲了解更多信息，请参阅 https://docs.redhat.com/en/documentation/openshift_container_platform/4.19/html/authentication_and_authorization/managing-pod-security-policies["OpenShift 安全上下文约束文档"^]。
+
+您可以通过设置 Kubernetes 环境变量来防止目标命名空间中的特定注解被覆盖。 `RESTORE_SKIP_NAMESPACE_ANNOTATIONS`在执行恢复或故障转移操作之前。例如：
+
+[source, console]
+----
+helm upgrade trident-protect --set restoreSkipNamespaceAnnotations=<annotation_key_to_skip_1>,<annotation_key_to_skip_2> --reuse-values
+----
+
+NOTE: 执行恢复或故障转移操作时，任何命名空间注释和标签都将生效。 `restoreSkipNamespaceAnnotations` 和 `restoreSkipNamespaceLabels` 不参与恢复或故障转移操作。确保在初始 Helm 安装期间配置这些设置。欲了解更多信息，请参阅 link:../trident-protect/trident-protect-customize-installation.html#configure-autoSupport-and-namespace-filtering-options["配置AutoSupport和命名空间过滤选项"]。
+
+如果您使用 Helm 安装了源应用程序， `--create-namespace`国旗，给予特殊待遇 `name`标签键。在恢复或故障转移过程中， Trident Protect 会将此标签复制到目标命名空间，但如果源命名空间的值与源命名空间的值匹配，则会将值更新为目标命名空间的值。如果此值与源命名空间不匹配，则会将其复制到目标命名空间，而不做任何更改。
+
+
+
+=== 示例
+
+以下示例展示了源命名空间和目标命名空间，每个命名空间都有不同的注释和标签。您可以查看操作前后目标命名空间的状态，以及目标命名空间中的注释和标签是如何组合或覆盖的。
+
+
+
+==== 在恢复或故障转移操作之前
+
+下表说明了恢复或故障转移操作之前示例源命名空间和目标命名空间的状态：
+
+[cols="1,2a,2a"]
+|===
+| 命名空间 | 标注 | 标签 
+
+
+| 命名空间 ns-1（源）  a| 
+* annotation.one/key: "updatedvalue"
+* annotation.two/key: "true"
+
+ a| 
+* 环境=生产
+* 合规性=HIPAA
+* 名称=ns-1
+
+
+
+
+| 命名空间 ns-2（目标）  a| 
+* annotation.one/key: "true"
+* annotation.three/key: "false"
+
+ a| 
+* 角色=数据库
+
+
+|===
+
+
+==== 恢复操作后
+
+下表说明了恢复或故障转移操作后示例目标命名空间的状态。有些键已被添加，有些键已被覆盖，并且 `name`标签已更新，以匹配目标命名空间：
+
+[cols="1,2a,2a"]
+|===
+| 命名空间 | 标注 | 标签 
+
+
+| 命名空间 ns-2（目标）  a| 
+* annotation.one/key: "updatedvalue"
+* annotation.two/key: "true"
+* annotation.three/key: "false"
+
+ a| 
+* 名称=ns-2
+* 合规性=HIPAA
+* 环境=生产
+* 角色=数据库
+
+
+|===

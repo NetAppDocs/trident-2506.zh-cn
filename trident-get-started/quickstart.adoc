@@ -1,0 +1,62 @@
+---
+sidebar: sidebar 
+permalink: trident-get-started/quickstart.html 
+keywords: kubernetes cluster, simple installation, Kubernetes installation 
+summary: 如果您是 Kubernetes 新手，请按照说明安装 Kubernetes 进行试用。这些说明提供了一个基本的单节点集群， Trident可以将其集成到该集群中进行演示。 
+---
+= Trident快速入门
+:hardbreaks:
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+只需几个步骤，即可安装Trident并开始管理存储资源。开始之前，请先回顾一下link:requirements.html["Trident的要求"]。
+
+
+NOTE: 有关 Docker 的信息，请参阅link:../trident-docker/deploy-docker.html["Trident for Docker"]。
+
+.image:https://raw.githubusercontent.com/NetAppDocs/common/main/media/number-1.png["一个"]准备工作节点
+[role="quick-margin-para"]
+Kubernetes 集群中的所有工作节点都必须能够挂载您为 Pod 配置的卷。
+
+[role="quick-margin-para"]
+link:../trident-use/worker-node-prep.html["准备工作节点"]
+
+.image:https://raw.githubusercontent.com/NetAppDocs/common/main/media/number-2.png["两个"]安装Trident
+[role="quick-margin-para"]
+Trident提供多种安装方法和模式，针对各种环境和组织进行了优化。
+
+[role="quick-margin-para"]
+link:../trident-get-started/kubernetes-deploy.html["安装Trident"]
+
+.image:https://raw.githubusercontent.com/NetAppDocs/common/main/media/number-3.png["三"]创建后端
+[role="quick-margin-para"]
+后端定义了Trident与存储系统之间的关系。它告诉Trident如何与该存储系统通信，以及Trident应该如何从中配置卷。
+
+[role="quick-margin-para"]
+link:../trident-use/backends.html["配置后端"]适用于您的存储系统
+
+.image:https://raw.githubusercontent.com/NetAppDocs/common/main/media/number-4.png["四个"]创建 Kubernetes 存储类
+[role="quick-margin-para"]
+Kubernetes StorageClass 对象指定Trident作为配置器，并允许您创建存储类以配置具有可自定义属性的卷。  Trident为指定Trident配置器的 Kubernetes 对象创建匹配的存储类。
+
+[role="quick-margin-para"]
+link:../trident-use/create-stor-class.html["创建存储类"]
+
+.image:https://raw.githubusercontent.com/NetAppDocs/common/main/media/number-5.png["五"]提供一定量
+[role="quick-margin-para"]
+持久卷 (PV) 是 Kubernetes 集群上由集群管理员配置的物理存储资源。  _PersistentVolumeClaim_ (PVC) 是对集群上持久卷的访问请求。
+
+[role="quick-margin-para"]
+创建一个持久卷 (PV) 和一个持久卷声明 (PVC)，使用配置的 Kubernetes StorageClass 请求访问 PV。然后您可以将光伏组件安装到支架上。
+
+[role="quick-margin-para"]
+link:../trident-use/vol-provision.html["提供一定量"]
+
+
+
+== 下一步是什么？
+
+现在您可以添加其他后端、管理存储类、管理后端以及执行卷操作。

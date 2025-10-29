@@ -1,0 +1,865 @@
+---
+sidebar: sidebar 
+permalink: trident-use/ontap-nas-examples.html 
+keywords: map backends, storage classes, trident backend, ontap-nas, ontap-nas-economy, ontap-nas-flexgroups, options, storageclasses, fsx, metrocluster 
+summary: 了解如何在Trident安装中创建和使用ONTAP NAS 驱动程序。本节提供后端配置示例以及如何将后端映射到 StorageClasses 的详细信息。 
+---
+= ONTAP NAS 配置选项和示例
+:hardbreaks:
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+学习如何在Trident系统中创建和使用ONTAP NAS 驱动程序。本节提供后端配置示例以及将后端映射到 StorageClasses 的详细信息。
+
+
+
+== 后端配置选项
+
+请参阅下表了解后端配置选项：
+
+[cols="1,3,2"]
+|===
+| 参数 | 描述 | 默认 
+
+
+| `version` |  | 始终为 1 
+
+
+| `storageDriverName` | 存储驱动程序的名称 | `ontap-nas`， `ontap-nas-economy` ， 或者 `ontap-nas-flexgroup` 
+
+
+| `backendName` | 自定义名称或存储后端 | 驱动程序名称 + "_" + dataLIF 
+
+
+| `managementLIF` | 集群或 SVM 管理 LIF 的 IP 地址可以指定完全限定域名 (FQDN)。如果Trident安装时使用了 IPv6 标志，则可以设置为使用 IPv6 地址。 IPv6 地址必须用方括号定义，例如： `[28e8:d9fb:a825:b7bf:69a8:d02f:9e7b:3555]` 。为了实现MetroCluster 的无缝切换，请参阅<<mcc-best>>。 | "10.0.0.1", "[2001:1234:abcd::fefe]" 
+
+
+| `dataLIF` | LIF协议的IP地址。 NetApp建议指定 `dataLIF`。如果未提供， Trident将从 SVM 获取 dataLIF。您可以指定一个完全限定域名 (FQDN) 用于 NFS 挂载操作，从而创建轮询 DNS 以在多个 dataLIF 之间进行负载均衡。初始设置后可以更改。参考。如果Trident安装时使用了 IPv6 标志，则可以设置为使用 IPv6 地址。  IPv6 地址必须用方括号定义，例如： `[28e8:d9fb:a825:b7bf:69a8:d02f:9e7b:3555]` 。 *Metrocluster 除外。*查看<<mcc-best>>。 | 指定地址或从 SVM 派生，如果未指定（不推荐） 
+
+
+| `svm` | 要使用的存储虚拟机 *Metrocluster 除外。*查看<<mcc-best>>。 | 如果是 SVM 则推导而来 `managementLIF`已指定 
+
+
+| `autoExportPolicy` | 启用自动导出策略创建和更新 [布尔值]。使用 `autoExportPolicy`和 `autoExportCIDRs`可选功能包括： Trident可以自动管理出口策略。 | false 
+
+
+| `autoExportCIDRs` | 用于过滤 Kubernetes 节点 IP 的 CIDR 列表 `autoExportPolicy`已启用。使用 `autoExportPolicy`和 `autoExportCIDRs`可选功能包括： Trident可以自动管理出口策略。 | ["0.0.0.0/0", "::/0"]` 
+
+
+| `labels` | 要应用于卷的任意 JSON 格式标签集 | "" 
+
+
+| `clientCertificate` | 客户端证书的 Base64 编码值。用于基于证书的身份验证 | "" 
+
+
+| `clientPrivateKey` | 客户端私钥的 Base64 编码值。用于基于证书的身份验证 | "" 
+
+
+| `trustedCACertificate` | 受信任 CA 证书的 Base64 编码值。可选。用于基于证书的身份验证 | "" 
+
+
+| `username` | 用于连接到集群/SVM 的用户名。用于基于凭据的身份验证。有关 Active Directory 身份验证，请参阅 link:../trident-use/ontap-san-examples.html#authenticate-trident-to-a-backend-svm-using-active-directory-credentials["使用 Active Directory 凭据向后端 SVM 验证Trident 的身份"]。 |  
+
+
+| `password` | 连接到集群/SVM 的密码。用于基于凭据的身份验证。有关 Active Directory 身份验证，请参阅 link:../trident-use/ontap-san-examples.html#authenticate-trident-to-a-backend-svm-using-active-directory-credentials["使用 Active Directory 凭据向后端 SVM 验证Trident 的身份"]。 |  
+
+
+| `storagePrefix`  a| 
+在 SVM 中配置新卷时使用的前缀。设置后无法更新
+
+
+NOTE: 当使用 ontap-nas-economy 和 24 个或更多字符的 storagePrefix 时，qtree 将不会嵌入存储前缀，尽管它会包含在卷名称中。
+| “三叉戟” 
+
+
+| `aggregate`  a| 
+用于配置的聚合（可选；如果设置，则必须分配给 SVM）。对于 `ontap-nas-flexgroup`驱动程序，此选项将被忽略。如果未分配，则可以使用任何可用的聚合来配置FlexGroup卷。
+
+
+NOTE: 当 SVM 中的聚合数据更新时， Trident会自动轮询 SVM 进行更新，而无需重启Trident控制器。当您在Trident中配置特定聚合以配置卷时，如果该聚合被重命名或移出 SVM，则在轮询 SVM 聚合时， Trident中的后端将变为失败状态。您必须将聚合更改为 SVM 上存在的聚合，或者将其完全删除，才能使后端恢复联机。
+ a| 
+""
+
+
+
+| `limitAggregateUsage` | 如果使用率超过此百分比，则配置失败。  *不适用于Amazon FSx for ONTAP*。 | （默认情况下不强制执行） 
+
+
+| flexgroupAggregateList  a| 
+用于配置的聚合列表（可选；如果设置，则必须分配给 SVM）。分配给 SVM 的所有聚合都用于配置FlexGroup卷。支持 *ontap-nas-flexgroup* 存储驱动程序。
+
+
+NOTE: 当 SVM 中的聚合列表更新时， Trident会通过轮询 SVM 自动更新该列表，而无需重新启动Trident控制器。当您在Trident中配置了特定的聚合列表来配置卷时，如果聚合列表被重命名或移出 SVM，则在轮询 SVM 聚合时， Trident中的后端将进入失败状态。您必须将聚合列表更改为 SVM 上存在的列表，或者将其完全删除，才能使后端恢复联机。
+| "" 
+
+
+| `limitVolumeSize` | 如果请求的卷大小大于此值，则配置失败。此外，它还限制了 qtree 管理的卷的最大大小，以及 `qtreesPerFlexvol`此选项允许自定义每个FlexVol volume的最大 qtree 数量。 | （默认情况下不强制执行） 
+
+
+| `debugTraceFlags` | 故障排除时要使用的调试标志。例如，{"api":false, "method":true} 请勿使用 `debugTraceFlags`除非您正在进行故障排除并且需要详细的日志转储。 | 无效的 
+
+
+| `nasType` | 配置 NFS 或 SMB 卷的创建。选项有 `nfs`， `smb`或空值。设置为 null 则默认使用 NFS 卷。 | `nfs` 
+
+
+| `nfsMountOptions` | 以逗号分隔的 NFS 挂载选项列表。 Kubernetes 持久卷的挂载选项通常在存储类中指定，但如果存储类中没有指定挂载选项， Trident将回退到使用存储后端配置文件中指定的挂载选项。如果在存储类或配置文件中未指定任何挂载选项， Trident将不会在关联的持久卷上设置任何挂载选项。 | "" 
+
+
+| `qtreesPerFlexvol` | 每个FlexVol 的最大 Qtree 数量必须在 [50, 300] 范围内 | “200” 
+
+
+| `smbShare` | 您可以指定以下一项：使用 Microsoft 管理控制台或ONTAP CLI 创建的 SMB 共享的名称；允许Trident创建 SMB 共享的名称；或者您可以将参数留空以防止对卷的公共共享访问。对于本地部署的ONTAP，此参数是可选的。此参数是Amazon FSx for ONTAP后端所必需的，不能为空。 | `smb-share` 
+
+
+| `useREST` | 使用ONTAP REST API 的布尔参数。 `useREST`设置为 `true`Trident使用ONTAP REST API 与后端通信；当设置为 `false`Trident使用 ONTAPI (ZAPI) 调用与后端通信。此功能需要ONTAP 9.11.1 及更高版本。此外，所使用的ONTAP登录角色必须具有访问权限。 `ontapi`应用。预定义项满足了这一点。 `vsadmin`和 `cluster-admin`角色。从Trident 24.06 版本和ONTAP 9.15.1 或更高版本开始， `useREST`设置为 `true`默认值；更改 `useREST`到 `false`使用 ONTAPI (ZAPI) 调用。 | `true`适用于ONTAP 9.15.1 或更高版本，否则 `false`。 
+
+
+| `limitVolumePoolSize` | 在 ontap-nas-economy 后端使用 Qtrees 时可请求的最大FlexVol大小。 | （默认情况下不强制执行） 
+
+
+| `denyNewVolumePools` | 限制 `ontap-nas-economy`后端创建新的FlexVol卷来包含它们的 Qtree。只有预先存在的 Flexvol 才能用于配置新的 PV。 |  
+
+
+| `adAdminUser` | 具有对 SMB 共享完全访问权限的 Active Directory 管理员用户或用户组。使用此参数可为 SMB 共享提供管理员权限，并赋予其完全控制权限。 |  
+|===
+
+
+== 卷配置的后端配置选项
+
+您可以使用以下选项控制默认配置。 `defaults`配置部分。例如，请参见下面的配置示例。
+
+[cols="1,3,2"]
+|===
+| 参数 | 描述 | 默认 
+
+
+| `spaceAllocation` | Q树的空间分配 | “真的” 
+
+
+| `spaceReserve` | 空间预留模式；“无”（细）或“大量”（粗） | “没有任何” 
+
+
+| `snapshotPolicy` | 要使用的快照策略 | “没有任何” 
+
+
+| `qosPolicy` | 要为创建的卷分配的 QoS 策略组。每个存储池/后端选择 qosPolicy 或 adaptiveQosPolicy 之一 | "" 
+
+
+| `adaptiveQosPolicy` | 要为创建的卷分配的自适应 QoS 策略组。每个存储池/后端选择 qosPolicy 或 adaptiveQosPolicy 之一。  ontap-nas-economy 不支持此功能。 | "" 
+
+
+| `snapshotReserve` | 快照预留的卷百分比 | 如果为“0”， `snapshotPolicy`为“无”，否则为“ 
+
+
+| `splitOnClone` | 创建时将克隆体从其母体中分离出来 | "false" 
+
+
+| `encryption` | 在新卷上启用NetApp卷加密 (NVE)；默认设置为 `false`。要使用此选项，必须在集群上获得 NVE 许可并启用 NVE。如果后端启用了 NAE，则在Trident中配置的任何卷都将启用 NAE。更多信息，请参阅：link:../trident-reco/security-reco.html["Trident如何与 NVE 和 NAE 协同工作"] 。 | "false" 
+
+
+| `tieringPolicy` | 分层策略使用“无” |  
+
+
+| `unixPermissions` | 新卷模式 | NFS 卷的端口号为“777”；SMB 卷的端口号为空（不适用）。 
+
+
+| `snapshotDir` | 控制对以下方面的访问 `.snapshot`目录 | NFSv4 为“true”，NFSv3 为“false”。 
+
+
+| `exportPolicy` | 出口政策的使用 | “默认” 
+
+
+| `securityStyle` | 新卷的安全样式。 NFS 支持 `mixed`和 `unix`安全措施。中小企业支持 `mixed`和 `ntfs`安全措施。 | NFS 默认值为 `unix`。  SMB 默认值为 `ntfs`。 
+
+
+| `nameTemplate` | 用于创建自定义卷名称的模板。 | "" 
+|===
+
+NOTE: 将 QoS 策略组与Trident结合使用需要ONTAP 9.8 或更高版本。您应该使用非共享的 QoS 策略组，并确保该策略组单独应用于每个成员。共享的 QoS 策略组强制规定所有工作负载的总吞吐量上限。
+
+
+
+=== 卷配置示例
+
+以下是一个定义了默认值的示例：
+
+[source, yaml]
+----
+---
+version: 1
+storageDriverName: ontap-nas
+backendName: customBackendName
+managementLIF: 10.0.0.1
+dataLIF: 10.0.0.2
+labels:
+  k8scluster: dev1
+  backend: dev1-nasbackend
+svm: trident_svm
+username: cluster-admin
+password: <password>
+limitAggregateUsage: 80%
+limitVolumeSize: 50Gi
+nfsMountOptions: nfsvers=4
+debugTraceFlags:
+  api: false
+  method: true
+defaults:
+  spaceReserve: volume
+  qosPolicy: premium
+  exportPolicy: myk8scluster
+  snapshotPolicy: default
+  snapshotReserve: "10"
+----
+为了 `ontap-nas`和 `ontap-nas-flexgroups`Trident现在使用新的计算方法，以确保FlexVol 的尺寸与 snapshotReserve 百分比和 PVC 正确匹配。当用户请求 PVC 时， Trident会使用新的计算方法创建具有更多空间的原始FlexVol 。此计算方法可确保用户在 PVC 中获得其请求的可写空间，而不是少于其请求的空间。在 v21.07 之前，当用户请求 PVC（例如 5 GiB）时，如果快照预留百分比为 50%，则只能获得 2.5 GiB 的可写空间。这是因为用户请求的是整个卷。 `snapshotReserve`是其中的百分比。在Trident 21.07 中，用户请求的是可写空间，而Trident定义了该空间。 `snapshotReserve`将数值表示为占总体积的百分比。这不适用于 `ontap-nas-economy`。请参阅以下示例了解其工作原理：
+
+计算方法如下：
+
+[listing]
+----
+Total volume size = (PVC requested size) / (1 - (snapshotReserve percentage) / 100)
+----
+对于快照预留 = 50% 且 PVC 请求 = 5 GiB 的情况，总卷大小为 5/.5 = 10 GiB，可用大小为 5 GiB，这正是用户在 PVC 请求中请求的大小这 `volume show`该命令应显示与此示例类似的结果：
+
+image::../media/volume-show-nas.png[显示 volume show 命令的输出结果。]
+
+升级Trident时，先前安装的现有后端将按上述方式配置卷。对于升级前创建的卷，您应该调整其大小才能观察到更改。例如，一个 2 GiB 的 PVC `snapshotReserve=50`之前的结果是一个提供 1 GiB 可写空间的卷。例如，将卷大小调整为 3 GiB，将在 6 GiB 的卷上为应用程序提供 3 GiB 的可写空间。
+
+
+
+== 最小配置示例
+
+以下示例展示了基本配置，其中大多数参数都保留默认值。这是定义后端最简单的方法。
+
+
+NOTE: 如果您在NetApp ONTAP上使用Amazon FSx和Trident，建议为 LIF 指定 DNS 名称而不是 IP 地址。
+
+.ONTAP NAS 经济示例
+[%collapsible]
+====
+[source, yaml]
+----
+---
+version: 1
+storageDriverName: ontap-nas-economy
+managementLIF: 10.0.0.1
+dataLIF: 10.0.0.2
+svm: svm_nfs
+username: vsadmin
+password: password
+----
+====
+.ONTAP NAS Flexgroup 示例
+[%collapsible]
+====
+[source, yaml]
+----
+---
+version: 1
+storageDriverName: ontap-nas-flexgroup
+managementLIF: 10.0.0.1
+dataLIF: 10.0.0.2
+svm: svm_nfs
+username: vsadmin
+password: password
+----
+====
+.MetroCluster示例
+[#mcc-best%collapsible]
+====
+您可以配置后端，以避免在切换和切换回后端后手动更新后端定义。link:../trident-reco/backup.html#svm-replication-and-recovery["SVM复制和恢复"] 。
+
+为了实现无缝切换和切换回，请指定 SVM `managementLIF`并省略 `dataLIF`和 `svm`参数。例如：
+
+[source, yaml]
+----
+---
+version: 1
+storageDriverName: ontap-nas
+managementLIF: 192.168.1.66
+username: vsadmin
+password: password
+----
+====
+.SMB 卷示例
+[%collapsible]
+====
+[source, yaml]
+----
+---
+version: 1
+backendName: ExampleBackend
+storageDriverName: ontap-nas
+managementLIF: 10.0.0.1
+nasType: smb
+securityStyle: ntfs
+unixPermissions: ""
+dataLIF: 10.0.0.2
+svm: svm_nfs
+username: vsadmin
+password: password
+----
+====
+.基于证书的身份验证示例
+[%collapsible]
+====
+这是一个最小后端配置示例。 `clientCertificate` ， `clientPrivateKey` ， 和 `trustedCACertificate`（如果使用受信任的 CA，则为可选） `backend.json`分别取客户端证书、私钥和受信任 CA 证书的 base64 编码值。
+
+[source, yaml]
+----
+---
+version: 1
+backendName: DefaultNASBackend
+storageDriverName: ontap-nas
+managementLIF: 10.0.0.1
+dataLIF: 10.0.0.15
+svm: nfs_svm
+clientCertificate: ZXR0ZXJwYXB...ICMgJ3BhcGVyc2
+clientPrivateKey: vciwKIyAgZG...0cnksIGRlc2NyaX
+trustedCACertificate: zcyBbaG...b3Igb3duIGNsYXNz
+storagePrefix: myPrefix_
+----
+====
+.自动出口政策示例
+[%collapsible]
+====
+本示例向您展示如何指示Trident使用动态导出策略来自动创建和管理导出策略。这对于以下情况也适用： `ontap-nas-economy`和 `ontap-nas-flexgroup`司机。
+
+[source, yaml]
+----
+---
+version: 1
+storageDriverName: ontap-nas
+managementLIF: 10.0.0.1
+dataLIF: 10.0.0.2
+svm: svm_nfs
+labels:
+  k8scluster: test-cluster-east-1a
+  backend: test1-nasbackend
+autoExportPolicy: true
+autoExportCIDRs:
+- 10.0.0.0/24
+username: admin
+password: password
+nfsMountOptions: nfsvers=4
+----
+====
+.IPv6 地址示例
+[%collapsible]
+====
+这个例子表明 `managementLIF`使用 IPv6 地址。
+
+[source, yaml]
+----
+---
+version: 1
+storageDriverName: ontap-nas
+backendName: nas_ipv6_backend
+managementLIF: "[5c5d:5edf:8f:7657:bef8:109b:1b41:d491]"
+labels:
+  k8scluster: test-cluster-east-1a
+  backend: test1-ontap-ipv6
+svm: nas_ipv6_svm
+username: vsadmin
+password: password
+----
+====
+.使用 SMB 卷的Amazon FSx for ONTAP示例
+[%collapsible]
+====
+这 `smbShare`使用 SMB 卷的 FSx for ONTAP需要此参数。
+
+[source, yaml]
+----
+---
+version: 1
+backendName: SMBBackend
+storageDriverName: ontap-nas
+managementLIF: example.mgmt.fqdn.aws.com
+nasType: smb
+dataLIF: 10.0.0.15
+svm: nfs_svm
+smbShare: smb-share
+clientCertificate: ZXR0ZXJwYXB...ICMgJ3BhcGVyc2
+clientPrivateKey: vciwKIyAgZG...0cnksIGRlc2NyaX
+trustedCACertificate: zcyBbaG...b3Igb3duIGNsYXNz
+storagePrefix: myPrefix_
+----
+====
+.使用 nameTemplate 的后端配置示例
+[%collapsible]
+====
+[source, yaml]
+----
+---
+version: 1
+storageDriverName: ontap-nas
+backendName: ontap-nas-backend
+managementLIF: <ip address>
+svm: svm0
+username: <admin>
+password: <password>
+defaults:
+  nameTemplate: "{{.volume.Name}}_{{.labels.cluster}}_{{.volume.Namespace}}_{{.vo\
+    lume.RequestName}}"
+labels:
+  cluster: ClusterA
+  PVC: "{{.volume.Namespace}}_{{.volume.RequestName}}"
+----
+====
+
+
+== 具有虚拟池的后端示例
+
+在下方所示的示例后端定义文件中，所有存储池都设置了特定的默认值，例如： `spaceReserve`没有， `spaceAllocation`为假，并且 `encryption`错误。虚拟池在存储部分中定义。
+
+Trident在“备注”字段中设置配置标签。  FlexVol上已设置评论 `ontap-nas`或FlexGroup `ontap-nas-flexgroup` 。 Trident在配置时会将虚拟池上的所有标签复制到存储卷。为了方便起见，存储管理员可以为每个虚拟池定义标签，并按标签对卷进行分组。
+
+在这些示例中，一些存储池会设置自己的参数。 `spaceReserve` ， `spaceAllocation` ， 和 `encryption`有些值会覆盖默认值，有些池会覆盖默认值。
+
+.ONTAP NAS 示例
+[%collapsible%open]
+====
+[source, yaml]
+----
+---
+version: 1
+storageDriverName: ontap-nas
+managementLIF: 10.0.0.1
+svm: svm_nfs
+username: admin
+password: <password>
+nfsMountOptions: nfsvers=4
+defaults:
+  spaceReserve: none
+  encryption: "false"
+  qosPolicy: standard
+labels:
+  store: nas_store
+  k8scluster: prod-cluster-1
+region: us_east_1
+storage:
+  - labels:
+      app: msoffice
+      cost: "100"
+    zone: us_east_1a
+    defaults:
+      spaceReserve: volume
+      encryption: "true"
+      unixPermissions: "0755"
+      adaptiveQosPolicy: adaptive-premium
+  - labels:
+      app: slack
+      cost: "75"
+    zone: us_east_1b
+    defaults:
+      spaceReserve: none
+      encryption: "true"
+      unixPermissions: "0755"
+  - labels:
+      department: legal
+      creditpoints: "5000"
+    zone: us_east_1b
+    defaults:
+      spaceReserve: none
+      encryption: "true"
+      unixPermissions: "0755"
+  - labels:
+      app: wordpress
+      cost: "50"
+    zone: us_east_1c
+    defaults:
+      spaceReserve: none
+      encryption: "true"
+      unixPermissions: "0775"
+  - labels:
+      app: mysqldb
+      cost: "25"
+    zone: us_east_1d
+    defaults:
+      spaceReserve: volume
+      encryption: "false"
+      unixPermissions: "0775"
+
+----
+====
+.ONTAP NAS FlexGroup示例
+[%collapsible%open]
+====
+[source, yaml]
+----
+---
+version: 1
+storageDriverName: ontap-nas-flexgroup
+managementLIF: 10.0.0.1
+svm: svm_nfs
+username: vsadmin
+password: <password>
+defaults:
+  spaceReserve: none
+  encryption: "false"
+labels:
+  store: flexgroup_store
+  k8scluster: prod-cluster-1
+region: us_east_1
+storage:
+  - labels:
+      protection: gold
+      creditpoints: "50000"
+    zone: us_east_1a
+    defaults:
+      spaceReserve: volume
+      encryption: "true"
+      unixPermissions: "0755"
+  - labels:
+      protection: gold
+      creditpoints: "30000"
+    zone: us_east_1b
+    defaults:
+      spaceReserve: none
+      encryption: "true"
+      unixPermissions: "0755"
+  - labels:
+      protection: silver
+      creditpoints: "20000"
+    zone: us_east_1c
+    defaults:
+      spaceReserve: none
+      encryption: "true"
+      unixPermissions: "0775"
+  - labels:
+      protection: bronze
+      creditpoints: "10000"
+    zone: us_east_1d
+    defaults:
+      spaceReserve: volume
+      encryption: "false"
+      unixPermissions: "0775"
+
+----
+====
+.ONTAP NAS 经济示例
+[%collapsible%open]
+====
+[source, yaml]
+----
+---
+version: 1
+storageDriverName: ontap-nas-economy
+managementLIF: 10.0.0.1
+svm: svm_nfs
+username: vsadmin
+password: <password>
+defaults:
+  spaceReserve: none
+  encryption: "false"
+labels:
+  store: nas_economy_store
+region: us_east_1
+storage:
+  - labels:
+      department: finance
+      creditpoints: "6000"
+    zone: us_east_1a
+    defaults:
+      spaceReserve: volume
+      encryption: "true"
+      unixPermissions: "0755"
+  - labels:
+      protection: bronze
+      creditpoints: "5000"
+    zone: us_east_1b
+    defaults:
+      spaceReserve: none
+      encryption: "true"
+      unixPermissions: "0755"
+  - labels:
+      department: engineering
+      creditpoints: "3000"
+    zone: us_east_1c
+    defaults:
+      spaceReserve: none
+      encryption: "true"
+      unixPermissions: "0775"
+  - labels:
+      department: humanresource
+      creditpoints: "2000"
+    zone: us_east_1d
+    defaults:
+      spaceReserve: volume
+      encryption: "false"
+      unixPermissions: "0775"
+
+----
+====
+
+
+== 将后端映射到存储类
+
+以下 StorageClass 定义指的是<<具有虚拟池的后端示例>>。使用 `parameters.selector`字段中，每个 StorageClass 都会指定哪些虚拟池可用于托管卷。卷将具有所选虚拟池中定义的各个方面。
+
+* 这 `protection-gold`StorageClass 将映射到第一个和第二个虚拟池。 `ontap-nas-flexgroup`后端。只有这些泳池提供黄金级保护。
++
+[source, yaml]
+----
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: protection-gold
+provisioner: csi.trident.netapp.io
+parameters:
+  selector: "protection=gold"
+  fsType: "ext4"
+----
+* 这 `protection-not-gold`StorageClass 将映射到第三个和第四个虚拟池。 `ontap-nas-flexgroup`后端。除了黄金之外，只有这些金池提供其他级别的保护。
++
+[source, yaml]
+----
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: protection-not-gold
+provisioner: csi.trident.netapp.io
+parameters:
+  selector: "protection!=gold"
+  fsType: "ext4"
+----
+* 这 `app-mysqldb`StorageClass 将映射到第四个虚拟池。 `ontap-nas`后端。这是唯一一个为mysqldb类型应用程序提供存储池配置的存储池。
++
+[source, yaml]
+----
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: app-mysqldb
+provisioner: csi.trident.netapp.io
+parameters:
+  selector: "app=mysqldb"
+  fsType: "ext4"
+----
+* 该 `protection-silver-creditpoints-20k`StorageClass 将映射到第三个虚拟池。 `ontap-nas-flexgroup`后端。这是唯一提供银级保护和 20000 积分的彩池。
++
+[source, yaml]
+----
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: protection-silver-creditpoints-20k
+provisioner: csi.trident.netapp.io
+parameters:
+  selector: "protection=silver; creditpoints=20000"
+  fsType: "ext4"
+----
+* 这 `creditpoints-5k`StorageClass 将映射到第三个虚拟池。 `ontap-nas`后端和第二个虚拟池 `ontap-nas-economy`后端。这是唯一提供 5000 积分的彩池产品。
++
+[source, yaml]
+----
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: creditpoints-5k
+provisioner: csi.trident.netapp.io
+parameters:
+  selector: "creditpoints=5000"
+  fsType: "ext4"
+----
+
+
+Trident将决定选择哪个虚拟池，并确保满足存储需求。
+
+
+
+== 更新 `dataLIF`初始配置后
+
+初始配置完成后，您可以通过运行以下命令来更改 dataLIF，从而为新的后端 JSON 文件提供更新后的 dataLIF。
+
+[listing]
+----
+tridentctl update backend <backend-name> -f <path-to-backend-json-file-with-updated-dataLIF>
+----
+
+NOTE: 如果 PVC 连接到一个或多个舱体，则必须将所有相应的舱体放下，然后再将它们重新升起，以便新的 dataLIF 生效。
+
+
+
+== 安全的中小企业示例
+
+
+
+=== 使用 ontap-nas 驱动程序进行后端配置
+
+[source, yaml]
+----
+apiVersion: trident.netapp.io/v1
+kind: TridentBackendConfig
+metadata:
+  name: backend-tbc-ontap-nas
+  namespace: trident
+spec:
+  version: 1
+  storageDriverName: ontap-nas
+  managementLIF: 10.0.0.1
+  svm: svm2
+  nasType: smb
+  defaults:
+    adAdminUser: tridentADtest
+  credentials:
+    name: backend-tbc-ontap-invest-secret
+----
+
+
+=== 使用 ontap-nas-economy 驱动程序进行后端配置
+
+[source, yaml]
+----
+apiVersion: trident.netapp.io/v1
+kind: TridentBackendConfig
+metadata:
+  name: backend-tbc-ontap-nas
+  namespace: trident
+spec:
+  version: 1
+  storageDriverName: ontap-nas-economy
+  managementLIF: 10.0.0.1
+  svm: svm2
+  nasType: smb
+  defaults:
+    adAdminUser: tridentADtest
+  credentials:
+    name: backend-tbc-ontap-invest-secret
+----
+
+
+=== 后端配置及存储池
+
+[source, yaml]
+----
+apiVersion: trident.netapp.io/v1
+kind: TridentBackendConfig
+metadata:
+  name: backend-tbc-ontap-nas
+  namespace: trident
+spec:
+  version: 1
+  storageDriverName: ontap-nas
+  managementLIF: 10.0.0.1
+  svm: svm0
+  useREST: false
+  storage:
+  - labels:
+      app: msoffice
+    defaults:
+      adAdminUser: tridentADuser
+  nasType: smb
+  credentials:
+    name: backend-tbc-ontap-invest-secret
+
+----
+
+
+=== 使用 ontap-nas 驱动程序的存储类示例
+
+[source, yaml]
+----
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: ontap-smb-sc
+  annotations:
+    trident.netapp.io/smbShareAdUserPermission: change
+    trident.netapp.io/smbShareAdUser: tridentADtest
+parameters:
+  backendType: ontap-nas
+  csi.storage.k8s.io/node-stage-secret-name: smbcreds
+  csi.storage.k8s.io/node-stage-secret-namespace: trident
+  trident.netapp.io/nasType: smb
+provisioner: csi.trident.netapp.io
+reclaimPolicy: Delete
+volumeBindingMode: Immediate
+----
+
+NOTE: 请确保添加 `annotations`实现安全的SMB。如果没有注释，无论后端或 PVC 中设置了什么配置，安全 SMB 都无法工作。
+
+
+
+=== 使用 ontap-nas-economy 驱动程序的存储类示例
+
+[source, yaml]
+----
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: ontap-smb-sc
+  annotations:
+    trident.netapp.io/smbShareAdUserPermission: change
+    trident.netapp.io/smbShareAdUser: tridentADuser3
+parameters:
+  backendType: ontap-nas-economy
+  csi.storage.k8s.io/node-stage-secret-name: smbcreds
+  csi.storage.k8s.io/node-stage-secret-namespace: trident
+  trident.netapp.io/nasType: smb
+provisioner: csi.trident.netapp.io
+reclaimPolicy: Delete
+volumeBindingMode: Immediate
+----
+
+
+=== 包含单个 AD 用户的 PVC 示例
+
+[source, yaml]
+----
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: my-pvc4
+  namespace: trident
+  annotations:
+    trident.netapp.io/smbShareAccessControl: |
+      change:
+        - tridentADtest
+      read:
+        - tridentADuser
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: ontap-smb-sc
+----
+
+
+=== 包含多个 AD 用户的 PVC 示例
+
+[source, yaml]
+----
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: my-test-pvc
+  annotations:
+    trident.netapp.io/smbShareAccessControl: |
+      full_control:
+        - tridentTestuser
+        - tridentuser
+        - tridentTestuser1
+        - tridentuser1
+      change:
+        - tridentADuser
+        - tridentADuser1
+        - tridentADuser4
+        - tridentTestuser2
+      read:
+        - tridentTestuser2
+        - tridentTestuser3
+        - tridentADuser2
+        - tridentADuser3
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+----
