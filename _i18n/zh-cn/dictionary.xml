@@ -2445,23 +2445,19 @@
   <block id="948be8a05d305f0b3dece0e8dcaf4546" category="list-text">填写完之后<block ref="3e2c6ff026eba99761434b4f79aaa782" prefix=" " category="inline-code"></block>将文件的值正确后，应用 CR：</block>
   <block id="677aa747b5e08444532c7cc040384124" category="open-title">使用 CLI 创建源应用程序</block>
   <block id="feaddb5b204f8f8f1226cc6f02275f5c" category="list-text">创建源应用程序。例如：</block>
-  <block id="f815c45e5a618fe75ef3a716b30b711d" category="list-text">（可选）在源集群上，对源应用程序进行快照。此快照将用作目标集群上应用程序的基础。如果跳过此步骤，则需要等待下一次计划快照运行，以便获得最新的快照。</block>
   <block id="9399bd959f53d5a7d8671b597df92df2" category="paragraph">除了下面提供的计划之外，建议创建一个单独的每日快照计划，保留期为 7 天，以在对等ONTAP集群之间保持共同的快照。这样可以确保快照最多保留 7 天，但保留期限可以根据用户需求进行自定义。</block>
   <block id="bd8250ba3a5ac73f1ca0ba8c92937c5a" category="paragraph">如果发生故障转移，系统可以使用这些快照最多 7 天进行逆向操作。这种方法使得逆向过程更快、更高效，因为只会传输自上次快照以来所做的更改，而不是所有数据。</block>
   <block id="af22b57fbc1d302d6a0b83cb06ce9e6a" category="paragraph">如果应用程序的现有计划已经满足所需的保留要求，则无需制定其他计划。</block>
-  <block id="84caf200e79d5962bc7f3516e9ad328c" category="open-title">使用 CR 拍摄快照</block>
   <block id="929d5ad53cad5d51ead7578004e2d5e5" category="list-text">为源应用程序创建复制计划：</block>
   <block id="57cc31c4785dfe52bb22cc8d375a3b67" category="list-text">创建自定义资源 (CR) 文件并将其命名为（例如，<block ref="8898becea7c9a79dd32acb9c34818b46" prefix=" " category="inline-code"></block> ）。</block>
   <block id="87918fdbe5607aeceec3ec53bc40a2f8" category="list-text">*metadata.name*: (_必填_) 计划自定义资源的名称。</block>
   <block id="3e23380d121194d4ed43d5587e33eeba" category="list-text">*spec.AppVaultRef*: (_必需_) 此值必须与源应用程序的 AppVault 的 metadata.name 字段匹配。</block>
-  <block id="a7ac547d97c63ad78926b420081cf36d" category="list-text">*spec.ApplicationRef*: (_必需_) 此值必须与源应用程序 CR 的 metadata.name 字段匹配。</block>
   <block id="565c53b27f6972afc514c3431a7fb733" category="list-text">*spec.backupRetention*: (_Required_) 此字段为必填项，其值必须设置为 0。</block>
   <block id="e00228f2eaa851d908b74fd6e1cbb1ab" category="list-text">*spec.enabled*：必须设置为 true。</block>
   <block id="b8e08f9f53492c0cf7c4c918c8c27185" category="list-text">*spec.granularity*：必须设置为<block ref="90589c47f06eb971d548591f23c285af" prefix=" " category="inline-code"></block>。</block>
   <block id="8c33ed4b89c2cd001ffad0203fe3c3b6" category="list-text">*spec.recurrenceRule*: 定义 UTC 时间的开始日期和重复间隔。</block>
   <block id="35ef995e5b9fe2ba99491ff849d63302" category="list-text">*spec.snapshotRetention*：必须设置为 2。</block>
   <block id="7c6d1c687b69c90909ec8375ac84883e" category="list-text">填写完之后<block ref="8898becea7c9a79dd32acb9c34818b46" prefix=" " category="inline-code"></block>将文件的值正确后，应用 CR：</block>
-  <block id="3feb4a62c8b59cd52ae22845d363c901" category="open-title">使用 CLI 创建快照</block>
   <block id="85d88f09b637997959adc6d50a42d56f" category="list-text">在目标集群上，创建一个与在源集群上应用的 AppVault CR 完全相同的源应用程序 AppVault CR，并将其命名为（例如，<block ref="3ad9e8b652d0a9a977e2534bf143ea29" prefix=" " category="inline-code"></block> ）。</block>
   <block id="04a53b4d2f7e20d9df207bfb6beb6ee7" category="list-text">应用 CR：</block>
   <block id="8af8219e9797756f7e348dd40e365632" category="list-text">在目标集群上为目标应用程序创建目标 AppVault CR。根据您的存储提供商，修改示例中的内容。<block ref="789b31b0a5cabea5de04107e65439f53" category="inline-link-macro-rx"></block>为了适应您的环境：</block>
@@ -2476,10 +2472,8 @@
   <block id="ad47c31cec730ddef75893f6207a8350" category="list-text">*spec.namespaceMapping*: (_必需_) 目标命名空间和源命名空间必须与相应应用程序 CR 中定义的应用程序命名空间匹配。</block>
   <block id="0d2f17f43053f85c97752c575bb2af3e" category="list-text">*spec.sourceAppVaultRef*: (_必需_) 此值必须与源应用程序的 AppVault 名称匹配。</block>
   <block id="5c0044cad9c27e4f4742c4a031edd6eb" category="list-text">*spec.sourceApplicationName*: (_必需_) 此值必须与您在源应用程序 CR 中定义的源应用程序的名称匹配。</block>
-  <block id="5e77ee724e7a9c6f34c1fd6a65b3f3b5" category="list-text">*spec.storageClassName*: (_必填_) 选择集群上有效的存储类的名称。存储类必须链接到与源环境建立对等连接的ONTAP存储 VM。</block>
   <block id="e1e70c108ffb369c9c05ac65820562c3" category="list-text">填写完之后<block ref="e4fba3915616865173fe7feee130a30f" prefix=" " category="inline-code"></block>将文件的值正确后，应用 CR：</block>
   <block id="d4c94febe4f13411fa761de57ad6cce6" category="open-title">使用 CLI 创建 AppMirrorRelationship</block>
-  <block id="1d29e9d9da5d097b90cc18a976fa591c" category="list-text">创建并应用 AppMirrorRelationship 对象，将括号中的值替换为您环境中的信息。例如：</block>
   <block id="3d9dc864aeb5b914422a6a665c53ceeb" category="list-text">（可选）在目标集群上，检查复制关系的状态：</block>
   <block id="70cc2bec279e168711b67e789468c45c" category="section-title">故障转移到目标集群</block>
   <block id="196c4df78e5add7c9590d6a1c18367ec" category="paragraph">使用Trident Protect，您可以将复制的应用程序故障转移到目标集群。此过程会停止复制关系，并将应用程序在目标集群上联机。如果源集群上的应用程序正在运行， Trident Protect 不会停止该应用程序。</block>
@@ -5838,4 +5832,14 @@
   <block id="e8ce47501426b8525633fc30daf17d7a" category="sidebar">自定义卷名称</block>
   <block id="f18a50f02f48551895d57b81dd288142" category="sidebar">跨命名空间共享 NFS 卷</block>
   <block id="62486fa65fc31c383ace8989549632ad" category="sidebar">使用快照</block>
+  <block id="30e52f4e46178e20ec0172d136f6e964" category="list-text">（可选）在源集群上，对源应用程序进行快照。此快照将用作目标集群上应用程序的基础。如果跳过此步骤，则需要等待下一次计划快照运行，以便获得最新的快照。要创建按需快照，请参阅 <block ref="359fb751a7b652662d6f4f859ab7278e" category="inline-link-macro-rx"></block>。</block>
+  <block id="5c24c4abf654732ea864deb8dfd27900" category="list-text">在源集群上，创建复制计划 CR：</block>
+  <block id="7f3cf5a508f65aafe24cfcbde532a846" category="open-title">使用 CR 创建复制计划</block>
+  <block id="7228f7e08042915e251a683bfff18231" category="list-text">*spec.appVaultRef*: (_必需_) 此值必须与源应用程序的 AppVault 的 metadata.name 字段匹配。</block>
+  <block id="2845cbe42176f1140d5d897aaf3abea8" category="list-text">*spec.applicationRef*: (_必需_) 此值必须与源应用程序 CR 的 metadata.name 字段匹配。</block>
+  <block id="4cd94b75213793150ad247d75cd897e9" category="open-title">使用 CLI 创建复制计划</block>
+  <block id="3de5f07029546bc00c37d9c9edf9cc20" category="list-text">创建复制计划，并将括号中的值替换为您环境中的信息：</block>
+  <block id="7749c9ae56691a1f3a933f4d23d038e3" category="list-text">*spec.sourceApplicationUID*: （必需）此值必须与您在源应用程序 CR 中定义的源应用程序的 UID 匹配。</block>
+  <block id="3d684c1e0271c67148a368e61c2e954e" category="list-text">*spec.storageClassName*: (_可选_) 选择集群上有效的存储类的名称。存储类必须链接到与源环境建立对等连接的ONTAP存储 VM。如果未提供存储类，则默认使用集群上的默认存储类。</block>
+  <block id="c97418e1743694adcebfb4447351b629" category="list-text">创建并应用 AppMirrorRelationship 对象，并将括号中的值替换为您环境中的信息：</block>
 </blocks>
