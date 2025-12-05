@@ -20,7 +20,7 @@ summary: 您可以使用Trident Protect 从快照或备份中恢复您的应用�
 ====
 * 恢复应用程序时，为该应用程序配置的所有执行钩子都会随应用程序一起恢复。如果存在恢复后执行钩子，它将作为恢复操作的一部分自动运行。
 * 支持从备份恢复到不同的命名空间或恢复到原始命名空间（适用于 qtree 卷）。但是，对于 qtree 卷，不支持从快照恢复到不同的命名空间或恢复到原始命名空间。
-* 您可以使用高级设置来自定义恢复操作。欲了解更多信息，请参阅 link:../trident-protect/trident-protect-restore-settings.html["使用高级Trident保护恢复设置"]。
+* 您可以使用高级设置来自定义恢复操作。欲了解更多信息，请参阅 link:../trident-protect/trident-protect-restore-settings.html["使用高级Trident Protect 恢复设置"]。
 
 
 ====
@@ -279,7 +279,7 @@ NOTE: 当您使用 Kopia 作为数据移动器恢复备份时，您可以选择�
 
 * 目标集群已安装Trident Protect。
 * 目标集群可以访问与源集群相同的 AppVault 的存储桶路径，备份就存储在该存储桶中。
-* 确保在运行 AppVault CR 时，本地环境可以连接到 AppVault CR 中定义的对象存储桶。 `tridentctl-protect get appvaultcontent`命令。如果网络限制阻止访问，请从目标集群上的 pod 内运行Trident Protect CLI。
+* 确保在运行 AppVault CR 时，本地环境可以连接到 AppVault CR 中定义的对象存储桶。 `tridentctl-protect get appvaultcontent`命令。如果网络限制阻止访问，请改为从目标集群上的 pod 内运行Trident Protect CLI。
 * 确保 AWS 会话令牌的过期时间足以满足任何长时间运行的恢复操作。如果在恢复操作期间令牌过期，则操作可能会失败。
 +
 ** 请参阅 https://docs.aws.amazon.com/STS/latest/APIReference/API_GetSessionToken.html["AWS API 文档"^]有关检查当前会话令牌过期时间的更多信息。

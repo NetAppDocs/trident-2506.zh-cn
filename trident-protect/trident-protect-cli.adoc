@@ -14,7 +14,7 @@ summary: 您可以使用 protectctl 命令创建和操作Trident Protect 自定�
 
 
 [role="lead"]
-您可以使用Trident Protect 命令行插件，它是Trident的一个扩展。 `tridentctl`实用程序，用于创建和与Trident Protect 自定义资源 (CR) 进行交互。
+您可以使用Trident Protect 命令行插件，它是Trident的一个扩展。 `tridentctl`用于创建和与Trident Protect 自定义资源 (CR) 交互的实用程序。
 
 
 

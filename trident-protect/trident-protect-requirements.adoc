@@ -2,7 +2,7 @@
 sidebar: sidebar 
 permalink: trident-protect/trident-protect-requirements.html 
 keywords: trident protect, application, cluster, snapmirror replication, ontap, configuration 
-summary: 首先，请验证您的运行环境、应用程序集群、应用程序和许可证是否准备就绪。请确保您的环境满足部署和运行Trident Protect 的这些要求。 
+summary: 首先，请验证您的运行环境、应用程序集群、应用程序和许可证是否准备就绪。确保您的环境满足部署和运行Trident Protect 的这些要求。 
 ---
 = Trident保护要求
 :hardbreaks:
@@ -14,11 +14,11 @@ summary: 首先，请验证您的运行环境、应用程序集群、应用程�
 
 
 [role="lead"]
-首先，请验证您的运行环境、应用程序集群、应用程序和许可证是否准备就绪。请确保您的环境满足部署和运行Trident Protect 的这些要求。
+首先，请验证您的运行环境、应用程序集群、应用程序和许可证是否准备就绪。确保您的环境满足部署和运行Trident Protect 的这些要求。
 
 
 
-== Trident保护 Kubernetes 集群兼容性
+== Trident Protect Kubernetes 集群兼容性
 
 Trident Protect 与各种完全托管和自托管的 Kubernetes 产品兼容，包括：
 
@@ -33,7 +33,7 @@ Trident Protect 与各种完全托管和自托管的 Kubernetes 产品兼容，�
 
 [NOTE]
 ====
-* Trident保护备份仅支持 Linux 计算节点。Windows 计算节点不支持备份操作。
+* Trident Protect备份仅支持Linux计算节点。Windows 计算节点不支持备份操作。
 * 确保安装Trident Protect 的集群已配置运行中的快照控制器和相关的 CRD。要安装快照控制器，请参阅 https://docs.netapp.com/us-en/trident/trident-use/vol-snapshots.html#deploy-a-volume-snapshot-controller["这些说明"]。
 
 
@@ -58,7 +58,7 @@ Trident Protect 支持以下存储后端：
 
 * 请确保您拥有NetApp ONTAP存储后端。
 * 请确保您已配置用于存储备份的对象存储桶。
-* 创建您计划用于应用程序或应用程序数据管理操作的任何应用程序命名空间。  Trident Protect 不会为您创建这些命名空间；如果您在自定义资源中指定了不存在的命名空间，则操作将失败。
+* 创建您计划用于应用程序或应用程序数据管理操作的任何应用程序命名空间。Trident Protect 不会为您创建这些命名空间；如果您在自定义资源中指定了不存在的命名空间，则操作将失败。
 
 
 
@@ -89,13 +89,13 @@ NOTE: 您可以通过设置Trident后端配置选项，为新卷默认启用快�
 
 == 使用 KubeVirt 虚拟机保护数据
 
-Trident Protect 24.10 和 24.10.1 及更高版本在保护运行于 KubeVirt VM 上的应用程序时，行为有所不同。对于这两个版本，您都可以在数据保护操作期间启用或禁用文件系统冻结和解冻结。
+Trident Protect 24.10 和 24.10.1 及更高版本在保护运行在 KubeVirt VM 上的应用程序时，行为有所不同。对于这两个版本，您都可以在数据保护操作期间启用或禁用文件系统冻结和解冻结。
 
 
 NOTE: 在恢复操作期间，任何 `VirtualMachineSnapshots`为虚拟机 (VM) 创建的配置文件无法恢复。
 
-.Trident保护 24.10
-Trident protect 24.10 在数据保护操作期间不会自动确保 KubeVirt VM 文件系统的一致性状态。如果您想使用Trident Protect 24.10 保护您的 KubeVirt VM 数据，则需要在执行数据保护操作之前手动启用文件系统的冻结/解冻功能。这样可以确保文件系统处于一致状态。
+.Trident Protect 24.10
+Trident Protect 24.10 在数据保护操作期间不会自动确保 KubeVirt VM 文件系统的一致性状态。如果您想使用Trident Protect 24.10 保护您的 KubeVirt VM 数据，则需要在执行数据保护操作之前手动启用文件系统的冻结/解冻功能。这样可以确保文件系统处于一致状态。
 
 您可以配置Trident Protect 24.10 来管理数据保护操作期间 VM 文件系统的冻结和解冻。link:https://docs.openshift.com/container-platform/4.16/virt/install/installing-virt.html["配置虚拟化"^]然后使用以下命令：
 
@@ -104,7 +104,7 @@ Trident protect 24.10 在数据保护操作期间不会自动确保 KubeVirt VM 
 kubectl set env deployment/trident-protect-controller-manager NEPTUNE_VM_FREEZE=true -n trident-protect
 ----
 .Trident Protect 24.10.1 及更高版本
-从Trident protect 24.10.1 开始， Trident protect 会在数据保护操作期间自动冻结和解冻 KubeVirt 文件系统。您也可以使用以下命令禁用此自动行为：
+从Trident Protect 24.10.1 开始， Trident Protect 会在数据保护操作期间自动冻结和解冻 KubeVirt 文件系统。您也可以使用以下命令禁用此自动行为：
 
 [source, console]
 ----
@@ -128,7 +128,7 @@ NetApp SnapMirror复制功能可与Trident Protect 配合使用，适用于以�
 
 如果您计划使用SnapMirror复制功能，请确保您的ONTAP集群满足以下要求：
 
-* * NetApp Trident *：使用ONTAP作为后端服务的源 Kubernetes 集群和目标 Kubernetes 集群上都必须存在NetApp Trident 。  Trident Protect 支持使用NetApp SnapMirror技术进行复制，该技术使用以下驱动程序支持的存储类：
+* * NetApp Trident *：使用ONTAP作为后端服务的源 Kubernetes 集群和目标 Kubernetes 集群上都必须存在NetApp Trident 。Trident Protect 支持使用NetApp SnapMirror技术进行复制，该技术使用以下驱动程序支持的存储类：
 +
 ** `ontap-nas`：极品飞车
 ** `ontap-san`：iSCSI

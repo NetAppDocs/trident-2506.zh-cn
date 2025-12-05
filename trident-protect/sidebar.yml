@@ -2,7 +2,7 @@
 section: trident-protect
 title: 使用Trident Protect 保护应用程序
 entries:
-- title: 了解Trident保护
+- title: 了解Trident Protect
   url: "/trident-protect/learn-about-trident-protect.html"
 - title: 安装Trident Protect
   entries:
@@ -14,7 +14,7 @@ entries:
     url: "/trident-protect/trident-protect-cli.html"
   - title: 定制Trident Protect 安装
     url: "/trident-protect/trident-protect-customize-installation.html"
-- title: 管理Trident保护
+- title: 管理Trident Protect
   entries:
   - title: 管理授权和访问控制
     url: "/trident-protect/manage-authorization-access-control.html"

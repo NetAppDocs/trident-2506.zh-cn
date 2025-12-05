@@ -4,7 +4,7 @@ permalink: trident-protect/trident-protect-installation.html
 keywords: install, trident, protect, requirements, registry 
 summary: 如果您的环境符合要求，您可以按照以下步骤安装Trident Protect。 
 ---
-= 安装和配置Trident Protect
+= 安装并配置Trident Protect
 :hardbreaks:
 :allow-uri-read: 
 :nofooter: 

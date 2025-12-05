@@ -2,9 +2,9 @@
 sidebar: sidebar 
 permalink: trident-protect/trident-protect-restore-settings.html 
 keywords: trident, protect, restore, data, backup 
-summary: 您可以使用注释、命名空间设置和存储选项自定义Trident保护恢复操作。 
+summary: 您可以使用注释、命名空间设置和存储选项来自定义Trident Protect 恢复操作。 
 ---
-= 使用高级Trident保护恢复设置
+= 使用高级Trident Protect 恢复设置
 :hardbreaks:
 :allow-uri-read: 
 :nofooter: 
