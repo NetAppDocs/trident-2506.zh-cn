@@ -39,16 +39,16 @@ RWO、ROX、RWX、RWOP
 
 == 了解Trident对 Google Cloud Cloud Volumes Service 的支持
 
-Trident可以在以下两种格式之一中创建Cloud Volumes Service卷：link:https://cloud.google.com/architecture/partners/netapp-cloud-volumes/service-types["服务类型"^] ：
+Trident 可以通过以下两种方式之一创建 Cloud Volumes Service 卷 link:https://docs.cloud.google.com/netapp/volumes/docs/discover/overview["服务类型"^]：
 
-* *CVS-Performance*： Trident 的默认服务类型。这种性能优化型服务类型最适合重视性能的生产工作负载。 CVS-Performance 服务类型是一种硬件选项，支持最小 100 GiB 大小的卷。您可以选择其中之一link:https://cloud.google.com/architecture/partners/netapp-cloud-volumes/service-levels#service_levels_for_the_cvs-performance_service_type["三个服务级别"^]：
+* *CVS-Performance*：默认 Trident 服务类型。这种性能优化的服务类型最适合重视性能的生产工作负载。CVS-Performance 服务类型是支持最小 100 GiB 大小的卷的硬件选项。您可以选择以下选项之一 link:https://docs.cloud.google.com/netapp/volumes/docs/discover/overview["三个服务级别"^]：
 +
 ** `standard`
 ** `premium`
 ** `extreme`
 
 
-* *CVS*：CVS 服务类型提供较高的区域可用性，但性能水平有限或中等。 CVS 服务类型是一种软件选项，它使用存储池来支持小至 1 GiB 的卷。存储池最多可包含 50 个卷，所有卷共享池的容量和性能。您可以选择其中之一link:https://cloud.google.com/architecture/partners/netapp-cloud-volumes/service-levels#service_levels_for_the_cvs_service_type["两种服务级别"^]：
+* *CVS*：CVS 服务类型提供高分区可用性，性能水平有限至中等。CVS 服务类型是一种软件选项，它使用存储池来支持小至 1 GiB 的卷。存储池最多可包含 50 个卷，其中所有卷共享池的容量和性能。您可以选择以下选项之一 link:https://docs.cloud.google.com/netapp/volumes/docs/discover/overview["两种服务级别"^]：
 +
 ** `standardsw`
 ** `zoneredundantstandardsw`
@@ -57,7 +57,7 @@ Trident可以在以下两种格式之一中创建Cloud Volumes Service卷：link
 
 
 .你需要什么
-配置和使用 https://cloud.netapp.com/cloud-volumes-service-for-gcp?utm_source=NetAppTrident_ReadTheDocs&utm_campaign=Trident["适用于 Google Cloud 的Cloud Volumes Service"^]后端需要以下组件：
+要配置和使用  https://www.netapp.com/google-cloud/netapp-volumes/["适用于 Google Cloud 的Cloud Volumes Service"^] 后端，您需要以下内容：
 
 * 已配置NetApp Cloud Volumes Service的 Google Cloud 帐户
 * 您的 Google Cloud 帐户的项目编号

@@ -1,6 +1,6 @@
 ---
 sidebar: sidebar 
-permalink: trident-get-started/kubernetes-deploy.html 
+permalink: trident-install/kubernetes-deploy.html 
 keywords: deploy, Trident, methods, operator, tridentctl, helm, tanzu, vmware 
 summary: '您可以使用Trident操作符（手动或使用 Helm）安装Trident ，或者使用 `tridentctl`。本主题提供重要信息，帮助您选择合适的安装流程。' 
 ---
@@ -40,7 +40,7 @@ summary: '您可以使用Trident操作符（手动或使用 Helm）安装Trident
 
 无论采用何种安装路径，您都必须具备以下条件：
 
-* 对运行受支持版本的 Kubernetes 且已启用功能要求的受支持 Kubernetes 集群拥有完全权限。回顾link:requirements.html["要求"]了解详情。
+* 运行受支持的 Kubernetes 版本的受支持的 Kubernetes 集群的完整权限，并启用了功能要求。查看 link:../trident-get-started/requirements.html["要求"] 了解详情。
 * 可访问受支持的NetApp存储系统。
 * 能够从所有 Kubernetes 工作节点挂载卷。
 * 一台带有 Linux 主机的 `kubectl`（或者 `oc`如果您使用的是 OpenShift，则需要安装并配置 OpenShift 来管理您要使用的 Kubernetes 集群。
@@ -56,13 +56,13 @@ TIP: 如果您还不熟悉……link:../trident-get-started/intro.html["基本�
 
 == 选择您的安装方式
 
-选择适合您的安装方式。您还应该考虑以下因素：link:kubernetes-deploy.html#move-between-installation-methods["方法之间的转换"]在做出决定之前。
+选择适合您的安装方法。您还应该在做出决定之前查看 link:../trident-install/kubernetes-deploy.html#moving-between-installation-methods["方法之间的转换"] 的注意事项。
 
 
 
 === 使用Trident运算符
 
-无论是手动部署还是使用 Helm， Trident operator 都是简化安装和动态管理Trident资源的绝佳方式。你甚至可以link:../trident-get-started/kubernetes-customize-deploy.html["自定义您的Trident操作员部署"]使用属性 `TridentOrchestrator`自定义资源（CR）。
+无论是手动部署还是使用 Helm，Trident 操作员都是简化安装和动态管理 Trident 资源的好方法。您甚至可以link:../trident-install/kubernetes-customize-deploy.html["自定义您的Trident操作员部署"]使用 `TridentOrchestrator`自定义资源 (CR) 中的属性。
 
 使用Trident运算符的优点包括：
 
@@ -123,9 +123,9 @@ NOTE: 如果集群升级到不受支持的版本，操作员将阻止安装Tride
 
 === 使用 `tridentctl`
 
-如果您有需要升级的现有部署，或者您希望高度定制部署，则应考虑以下事项： 。这是部署Trident的常规方法。
+如果您现有的部署必须升级，或者您希望高度自定义部署，则应考虑 。这是部署 Trident 的常规方法。
 
-你可以生成Trident资源的清单。这包括Trident在安装过程中创建的部署、守护进程集、服务帐户和集群角色。
+您可以为 Trident 资源生成清单。这包括部署、守护程序集、服务帐户以及 Trident 在安装过程中创建的集群角色。
 
 
 NOTE: 从 22.04 版本开始，每次安装Trident时将不再重新生成 AES 密钥。通过此次发布， Trident将安装一个新的密钥对象，该对象会在不同的安装版本中持久存在。这意味着， `tridentctl` 22.04 版本可以卸载以前版本的Trident，但更早的版本无法卸载 22.04 版本的安装。选择合适的安装方法。

@@ -154,7 +154,7 @@ NOTE: 如果 PVC 连接到一个或多个舱体，则必须将所有相应的舱
 | `encryption` | 在新卷上启用NetApp卷加密 (NVE)；默认设置为 `false`。要使用此选项，必须在集群上获得 NVE 许可并启用 NVE。如果后端启用了 NAE，则在Trident中配置的任何卷都将启用 NAE。更多信息，请参阅：link:../trident-reco/security-reco.html["Trident如何与 NVE 和 NAE 协同工作"] 。 | `false` 
 
 
-| `luksEncryption` | 启用LUKS加密。参考link:../trident-reco/security-reco.html#Use-Linux-Unified-Key-Setup-(LUKS)["使用 Linux 统一密钥设置 (LUKS)"]。仅限SAN。 | "" 
+| `luksEncryption` | 启用 LUKS 加密。请参阅 link:../trident-reco/security-luks.html["使用 Linux 统一密钥设置 (LUKS)"]。仅限 SAN。 | "" 
 
 
 | `tieringPolicy` | 分层策略的使用	`none` |  

@@ -141,7 +141,7 @@ Trident读取 `shareFromPVC`在目标 PVC 上添加注释，并将目标 PV 创�
 
 == 使用 `tridentctl get`查询子卷
 
-使用[`tridentctl`实用程序，您可以运行 `get`获取子卷的命令。更多信息，请参阅链接：../trident-reference/tridentctl.html[`tridentctl`命令和选项]。
+使用该[`tridentctl`实用程序，您可以运行该 `get`命令来获取从属卷。有关详细信息，请参阅链接：../trident-managing-k8s/tridentctl.html[`tridentctl`命令和选项]。
 
 [listing]
 ----
@@ -170,6 +170,5 @@ Usage:
 
 要了解有关跨命名空间卷访问的更多信息：
 
-* 访问link:https://cloud.netapp.com/blog/astra-blg-sharing-volumes-between-namespaces-say-hello-to-cross-namespace-volume-access["在命名空间之间共享卷：迎接跨命名空间卷访问"^]。
 * 观看演示link:https://media.netapp.com/page/9071d19d-1438-5ed3-a7aa-ea4d73c28b7f/solutions-products["NetAppTV"^]。
 

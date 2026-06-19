@@ -74,7 +74,7 @@ NOTE: 在 OpenShift 容器平台上使用Trident操作符进行升级时，应�
 
 == 步骤 3：选择升级方式
 
-通常情况下，您应该使用与初始安装相同的方法进行升级，但是您也可以……link:../trident-get-started/kubernetes-deploy.html#moving-between-installation-methods["安装方法之间的转换"] 。升级Trident有两种选择。
+一般来说，您应该使用与初始安装相同的方法进行升级，但您可以link:../trident-install/kubernetes-deploy.html#moving-between-installation-methods["安装方法之间的转换"]。升级 Trident 有两种选择。
 
 * link:upgrade-operator.html["使用Trident操作员进行升级"]
 +

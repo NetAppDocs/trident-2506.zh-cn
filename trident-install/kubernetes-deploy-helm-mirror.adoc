@@ -1,6 +1,6 @@
 ---
 sidebar: sidebar 
-permalink: trident-get-started/kubernetes-deploy-helm-mirror.html 
+permalink: trident-install/kubernetes-deploy-helm-mirror.html 
 keywords: deploy, Trident, operator, helm, helm chart, configuration, values, offline, air gap, gap, registry 
 summary: 您可以使用 Helm 部署Trident Operator 并安装Trident 。此过程适用于Trident所需的容器镜像存储在私有镜像仓库中的安装情况。 
 ---
@@ -38,12 +38,12 @@ summary: 您可以使用 Helm 部署Trident Operator 并安装Trident 。此过�
 
 == 使用 Helm 部署Trident Operator 并安装Trident。
 
-使用Tridentlink:https://netapp.github.io/trident-helm-chart["掌舵图"^]您可以一步完成Trident操作符的部署和Trident 的安装。
+使用Tridentlink:https://artifacthub.io/packages/helm/netapp-trident/trident-operator["掌舵图"^]您可以一步完成Trident操作符的部署和Trident 的安装。
 
-审查link:../trident-get-started/kubernetes-deploy.html["安装概述"]确保您已满足安装先决条件并为您的环境选择了正确的安装选项。
+请检查 link:../trident-install/kubernetes-deploy.html["安装概述"] 以确保您已满足安装先决条件，并为您的环境选择了正确的安装选项。
 
 .开始之前
-除了link:../trident-get-started/kubernetes-deploy.html#before-you-deploy["部署前提条件"]你需要link:https://v3.helm.sh/["Helm 版本 3"^]。
+除了 link:../trident-install/kubernetes-deploy.html#before-you-deploy["部署前提条件"] 之外，您还需要 link:https://v3.helm.sh/["Helm 版本 3"^]。
 
 
 IMPORTANT: 在私有仓库中安装Trident时，如果您使用的是 `imageRegistry`切换以指定存储库位置，不要使用 `/netapp/`在存储库路径中。

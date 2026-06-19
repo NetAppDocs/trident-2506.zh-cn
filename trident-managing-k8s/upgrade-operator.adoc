@@ -12,7 +12,7 @@ summary: 您可以使用操作员轻松升级现有的Trident安装。
 
 
 [role="lead"]
-您可以使用Trident Operator 手动升级Trident ，也可以使用 Helm 进行升级。您可以从一个Trident Operator 安装升级到另一个Trident Operator 安装，或者从一个 Trident Operator 安装升级到另一个 Trident Operator 安装。 `tridentctl`安装到Trident操作员版本。审查link:upgrade-trident.html#select-an-upgrade-method["选择升级方式"]在升级Trident操作程序之前。
+您可以使用 Trident 操作员手动或使用 Helm 升级 Trident。您可以从 Trident 操作员安装升级到另一个 Trident 操作员安装，或从 `tridentctl`安装升级到 Trident 操作员版本。在升级 Trident 操作员安装之前，请查看link:upgrade-trident.html#step-3-select-an-upgrade-method["选择升级方式"]。
 
 
 
@@ -26,7 +26,6 @@ NOTE: 要从使用命名空间作用域运算符（版本 20.07 至 20.10）安�
 .关于此任务
 Trident提供了一个捆绑文件，您可以使用该文件安装操作员并为您的 Kubernetes 版本创建关联对象。
 
-* 对于运行 Kubernetes 1.24 的集群，请使用link:https://github.com/NetApp/trident/tree/stable/v25.02/deploy/bundle_pre_1_25.yaml["bundle_pre_1_25.yaml"^]。
 * 对于运行 Kubernetes 1.25 或更高版本的集群，请使用link:https://github.com/NetApp/trident/tree/stable/v25.02/deploy/bundle_post_1_25.yaml["bundle_post_1_25.yaml"^]。
 
 
@@ -85,7 +84,7 @@ helm mapkubeapis trident  --namespace trident
 
 
 .步骤
-. 如果你link:../trident-get-started/kubernetes-deploy-helm.html#deploy-the-trident-operator-and-install-trident-using-helm["使用 Helm 安装了Trident 。"]你可以使用 `helm upgrade trident netapp-trident/trident-operator --version 100.2506.0`一步即可升级。如果您没有添加 Helm 仓库或无法使用它进行升级：
+. 如果您link:../trident-install/kubernetes-deploy-helm.html#deploy-the-trident-operator-and-install-trident-using-helm["使用 Helm 安装了Trident 。"]，您可以使用 `helm upgrade trident netapp-trident/trident-operator --version 100.2506.0`一步升级。如果您没有添加 Helm 存储库或无法使用它进行升级：
 +
 .. 从此处下载最新版Tridentlink:https://github.com/NetApp/trident/releases/latest["GitHub 上的 _Assets_ 部分"^] 。
 .. 使用 `helm upgrade`其中命令 `trident-operator-25.06.0.tgz`反映您想要升级到的版本。
@@ -110,7 +109,7 @@ NOTE: 如果在初始安装期间设置了自定义选项（例如，为Trident�
 您可以从以下位置升级到最新版本的Trident操作符： `tridentctl`安装。现有的后端和PVC将自动可用。
 
 
-NOTE: 在切换安装方法之前，请先查看link:../trident-get-started/kubernetes-deploy.html#moving-between-installation-methods["安装方法之间的转换"]。
+NOTE: 在切换安装方法之前，请查看 link:../trident-install/kubernetes-deploy.html#moving-between-installation-methods["安装方法之间的转换"]。
 
 .步骤
 . 下载最新版的Trident 。

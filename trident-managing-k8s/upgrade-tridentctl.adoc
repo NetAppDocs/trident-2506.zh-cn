@@ -18,7 +18,7 @@ summary: '您可以使用以下方法轻松升级现有的Trident安装： `trid
 卸载并重新安装Trident相当于升级。卸载Trident时， Trident部署使用的持久卷声明 (PVC) 和持久卷 (PV) 不会被删除。在Trident离线期间，已配置的 PV 仍将可用； Trident恢复在线后，将为在此期间创建的任何 PVC 配置卷。
 
 .开始之前
-审查link:upgrade-trident.html#select-an-upgrade-method["选择升级方式"]升级前使用 `tridentctl`。
+在使用 `tridentctl`进行升级之前，请先link:upgrade-trident.html#step-3-select-an-upgrade-method["选择升级方式"]审核。
 
 .步骤
 . 运行卸载命令 `tridentctl`移除与Trident关联的所有资源，但保留 CRD 和相关对象。
@@ -27,7 +27,7 @@ summary: '您可以使用以下方法轻松升级现有的Trident安装： `trid
 ----
 ./tridentctl uninstall -n <namespace>
 ----
-. 重新安装Trident。参考link:../trident-get-started/kubernetes-deploy-tridentctl.html["使用 tridentctl 安装Trident"]。
+. 重新安装 Trident。请参阅 link:../trident-install/kubernetes-deploy-tridentctl.html["使用 tridentctl 安装Trident"]。
 
 
 

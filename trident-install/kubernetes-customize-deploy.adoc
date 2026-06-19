@@ -1,6 +1,6 @@
 ---
 sidebar: sidebar 
-permalink: trident-get-started/kubernetes-customize-deploy.html 
+permalink: trident-install/kubernetes-customize-deploy.html 
 keywords: deploy, trident, methods, operator, tridentctl, helm, attributes, customize, tridentorchestrator, smb, windows 
 summary: 'Trident操作符允许您通过使用属性来自定义Trident 的安装方式。 `TridentOrchestrator`规格' 
 ---

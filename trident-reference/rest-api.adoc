@@ -12,7 +12,7 @@ summary: 如果您更喜欢与 Trident 的 REST API 进行交互，可以直接�
 
 
 [role="lead"]
-尽管link:tridentctl.html["tridentctl 命令和选项"]这是与Trident REST API 交互的最简单方法，如果您愿意，也可以直接使用 REST 端点。
+虽然 link:../trident-managing-k8s/tridentctl.html["tridentctl 命令和选项"] 是与 Trident REST API 交互的最简单方法，但如果您愿意，可以直接使用 REST 端点。
 
 
 

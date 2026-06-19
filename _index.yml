@@ -22,9 +22,9 @@ indexpage:
   - title: 部署Trident
     links:
     - title: 使用Trident操作员进行部署
-      url: "/trident-get-started/kubernetes-deploy-operator.html"
+      url: "/trident-install/kubernetes-deploy-operator.html"
     - title: 使用 tridentctl 进行部署
-      url: "/trident-get-started/kubernetes-deploy-tridentctl.html"
+      url: "/trident-install/kubernetes-deploy-tridentctl.html"
     - title: 部署适用于 Docker 的Trident
       url: "/trident-docker/deploy-docker.html"
   - title: 升级版Trident
