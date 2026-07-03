@@ -274,7 +274,7 @@ vserver nfs modify -vserver <svm_name> -showmount disabled
 
 NOTE: 尽管最大 IOPS 和突发 IOPS 可以设置为高达 200,000，但卷的实际最大性能受集群使用情况和每个节点性能的限制。
 
-数据块大小和带宽对 IOPS 数量有直接影响。随着数据块大小的增加，系统会将带宽增加到足以处理更大数据块大小的水平。随着带宽的增加，系统能够达到的IOPS数量会减少。请参阅 https://www.netapp.com/pdf.html?item=/media/10502-tr-4644pdf.pdf["SolidFire服务质量"^]有关服务质量和性能的更多信息。
+块大小和带宽对 IOPS 数量有直接影响。随着块大小的增加，系统将带宽增加到处理较大块大小所需的级别。随着带宽的增加，系统能够实现的 IOPS 数量会减少。有关 QoS 和性能的更多信息，请参阅 https://www.netapp.com/pdf.html?item=/media/10502-tr-4644.pdf["SolidFire服务质量"^]。
 
 
 
@@ -304,7 +304,7 @@ ONTAP
 
 *Element软件*
 
-* https://www.netapp.com/pdf.html?item=/media/10507-tr4639pdf.pdf["配置适用于 Linux 的SolidFire"^]
+* https://www.netapp.com/pdf.html?item=/media/10507-tr4639.pdf["配置适用于 Linux 的SolidFire"^]
 
 
 NetApp HCI
@@ -317,9 +317,9 @@ NetApp HCI
 
 * https://docs.netapp.com/us-en/ontap-apps-dbs/mysql/mysql-overview.html["ONTAP上 MySQL 的最佳实践"^]
 * https://www.netapp.com/pdf.html?item=/media/10510-tr-4605.pdf["SolidFire上 MySQL 的最佳实践"^]
-* https://www.netapp.com/pdf.html?item=/media/10513-tr-4635pdf.pdf["NetApp SolidFire和 Cassandra"^]
-* https://www.netapp.com/pdf.html?item=/media/10511-tr4606pdf.pdf["Oracle 在SolidFire的最佳实践"^]
-* https://www.netapp.com/pdf.html?item=/media/10512-tr-4610pdf.pdf["SolidFire上的PostgreSQL最佳实践"^]
+* https://www.netapp.com/pdf.html?item=/media/10513-tr-4635.pdf["NetApp SolidFire和 Cassandra"^]
+* https://www.netapp.com/pdf.html?item=/media/10511-tr4606.pdf["Oracle 在SolidFire的最佳实践"^]
+* https://www.netapp.com/pdf.html?item=/media/10512-tr-4610.pdf["SolidFire上的PostgreSQL最佳实践"^]
 
 
 并非所有应用程序都有具体的指导原则，因此与您的NetApp团队合作并使用以下方法至关重要： https://www.netapp.com/search/["NetApp库"^]查找最新文档。

@@ -59,7 +59,7 @@ NetApp HCI完全受Trident支持。  Trident可以直接针对底层NetApp HCI�
 
 == Azure NetApp Files
 
-https://azure.microsoft.com/en-us/services/netapp/["Azure NetApp Files"^]是由NetApp提供支持的企业级 Azure 文件共享服务。您可以在 Azure 中原生运行要求最高的基于文件的工作负载，并获得您期望从NetApp获得的高性能和丰富的数据管理功能。
+https://azure.microsoft.com/en-us/products/netapp/["Azure NetApp Files"^] 是企业级 Azure 文件共享服务，由 NetApp 提供支持。您可以在 Azure 中以本机方式运行要求最苛刻的基于文件的工作负载，并提供您期望从 NetApp 获得的性能和丰富的数据管理。
 
 
 

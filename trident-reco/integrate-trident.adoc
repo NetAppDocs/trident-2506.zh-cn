@@ -108,7 +108,7 @@ Amazon FSx for NetApp ONTAP让您能够利用您熟悉的NetApp功能、性能�
 
 === Azure NetApp Files后端驱动程序
 
-Trident使用 `azure-netapp-files`司机管理link:https://azure.microsoft.com/en-us/services/netapp/["Azure NetApp Files"^]服务。
+Trident 使用  `azure-netapp-files` 驱动程序来管理 link:https://azure.microsoft.com/en-us/products/netapp/["Azure NetApp Files"^] 服务。
 
 有关此驱动程序及其配置方法的更多信息，请参见此处。link:https://docs.netapp.com/us-en/trident/trident-use/anf.html["用于Azure NetApp Files的Trident后端配置"^] 。
 
