@@ -16,6 +16,7 @@ NetApp以多种方式为Trident提供支持。我们提供全天候 (24x7) 的�
 
 
 
+[[trident-support]]
 == Trident支持
 
 Trident根据您的版本提供三个级别的支持。参考link:https://mysupport.netapp.com/site/info/version-support["NetApp软件版本对定义的支持"^]。
@@ -76,24 +77,28 @@ NOTE: 有关最新 Trident 版本支持计划，请参阅 https://docs.netapp.co
 
 
 
+[[self-support]]
 == 自给自足
 
 如需查看完整的故障排除文章列表，请参阅 https://kb.netapp.com/Advice_and_Troubleshooting/Cloud_Services/Trident_Kubernetes["NetApp知识库（需要登录）"^]。
 
 
 
+[[community-support]]
 == 社区支持
 
 我们的平台上有一个活跃的容器用户公共社区（包括Trident开发人员）。link:https://discord.gg/NetApp["Discord 频道"^] 。这里是提出有关项目的一般性问题并与志同道合的同行讨论相关话题的好地方。
 
 
 
+[[netapp-technical-support]]
 == NetApp技术支持
 
 如需Trident的帮助，请使用以下命令创建支持包 `tridentctl logs -a -n trident`并将其发送至 `NetApp Support <Getting Help>`。
 
 
 
+[[for-more-information]]
 == 了解更多信息
 
 * link:https://github.com/NetApp/trident["Trident资源"^]

@@ -16,6 +16,7 @@ summary: 了解Amazon FSx for ONTAP的后端配置选项。本节提供后端配
 
 
 
+[[backend-configuration-options]]
 == 后端配置选项
 
 请参阅下表了解后端配置选项：
@@ -108,6 +109,7 @@ summary: 了解Amazon FSx for ONTAP的后端配置选项。本节提供后端配
 |===
 
 
+[[update-datalif-after-initial-configuration]]
 === 更新 `dataLIF`初始配置后
 
 初始配置完成后，您可以通过运行以下命令来更改 dataLIF，从而为新的后端 JSON 文件提供更新后的 dataLIF。
@@ -121,6 +123,7 @@ NOTE: 如果 PVC 连接到一个或多个舱体，则必须将所有相应的舱
 
 
 
+[[backend-configuration-options-for-provisioning-volumes]]
 == 卷配置的后端配置选项
 
 您可以使用以下选项控制默认配置。 `defaults`配置部分。例如，请参见下面的配置示例。
@@ -167,6 +170,7 @@ NOTE: 如果 PVC 连接到一个或多个舱体，则必须将所有相应的舱
 |===
 
 
+[[example-configurations]]
 == 示例配置
 
 .SMB卷的存储类配置

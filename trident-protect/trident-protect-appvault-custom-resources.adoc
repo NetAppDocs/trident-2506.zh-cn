@@ -23,12 +23,14 @@ NOTE: 确保 AppVault CR 位于安装了Trident Protect 的集群上。如果 Ap
 
 
 
+[[configure-appvault-authentication-and-passwords]]
 == 配置 AppVault 身份验证和密码
 
 在创建 AppVault CR 之前，请确保您选择的 AppVault 和数据移动器可以向提供商和任何相关资源进行身份验证。
 
 
 
+[[data-mover-repository-passwords]]
 === 数据迁移器存储库密码
 
 当您使用 CR 或Trident Protect CLI 插件创建 AppVault 对象时，您可以为 Restic 和 Kopia 加密指定带有自定义密码的 Kubernetes 密钥。如果您不指定密钥， Trident Protect 将使用默认密码。
@@ -81,6 +83,7 @@ kubectl create secret generic my-optional-data-mover-secret \
 ====
 
 
+[[s3-compatible-storage-iam-permissions]]
 === S3 兼容存储 IAM 权限
 
 当您访问与 S3 兼容的存储（例如 Amazon S3、通用 S3）时， https://docs.netapp.com/us-en/storagegrid/s3/index.html["StorageGrid S3"^] ， 或者 https://docs.netapp.com/us-en/ontap/s3-config/["ONTAP S3"^]使用Trident Protect 时，您需要确保提供的用户凭据具有访问存储桶的必要权限。以下是授予使用Trident Protect 进行访问所需的最低权限的策略示例。您可以将此策略应用于管理 S3 兼容存储桶策略的用户。
@@ -107,6 +110,7 @@ kubectl create secret generic my-optional-data-mover-secret \
 
 
 
+[[eks-pod-identity-for-amazon-s3-aws-authentication]]
 === 用于 Amazon S3（AWS）身份验证的 EKS Pod Identity
 
 Trident Protect 支持 Kopia 数据移动器操作的 EKS Pod Identity。此功能可实现对 S3 存储桶的安全访问，而无需将 AWS 凭证存储在 Kubernetes 机密中。
@@ -148,6 +152,7 @@ spec:
 ----
 
 
+[[appvault-key-generation-examples-for-cloud-providers]]
 === 适用于云提供商的 AppVault 密钥生成示例
 
 定义 AppVault CR 时，您需要包含凭证以访问提供商托管的资源，除非您使用 IAM 身份验证。如何生成凭证密钥将根据提供商的不同而有所不同。以下是几个提供商的命令行密钥生成示例。您可以使用以下示例为每个云提供商的凭证创建密钥。
@@ -215,12 +220,14 @@ kubectl create secret generic <secret-name> \
 ====
 
 
+[[appvault-creation-examples]]
 == AppVault 创建示例
 
 以下是每个提供商的 AppVault 定义示例。
 
 
 
+[[appvault-cr-examples]]
 === AppVault CR 示例
 
 您可以使用以下 CR 示例为每个云提供商创建 AppVault 对象。
@@ -404,6 +411,7 @@ spec:
 ====
 
 
+[[appvault-creation-examples-using-the-trident-protect-cli]]
 === 使用Trident Protect CLI 创建 AppVault 的示例
 
 您可以使用以下 CLI 命令示例为每个提供商创建 AppVault CR。
@@ -493,6 +501,7 @@ tridentctl-protect create vault StorageGridS3 <vault-name> \
 ====
 
 
+[[view-appvault-information]]
 == 查看 AppVault 信息
 
 您可以使用Trident Protect CLI 插件查看有关您在集群上创建的 AppVault 对象的信息。
@@ -534,6 +543,7 @@ tridentctl-protect get appvaultcontent gcp-vault \
 
 
 
+[[remove-an-appvault]]
 == 移除 AppVault
 
 您可以随时删除 AppVault 对象。

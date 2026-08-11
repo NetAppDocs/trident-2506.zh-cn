@@ -16,6 +16,7 @@ summary: 使用Trident，您可以在主命名空间中创建卷，并在一个�
 
 
 
+[[features]]
 == 功能
 
 TridentVolumeReference CR 允许您在一个或多个 Kubernetes 命名空间之间安全地共享 ReadWriteMany (RWX) NFS 卷。这种 Kubernetes 原生解决方案具有以下优点：
@@ -31,6 +32,7 @@ image::cross-namespace-sharing.png[跨命名空间共享的概念图。]
 
 
 
+[[quick-start]]
 == 快速启动
 
 只需几个步骤即可设置NFS卷共享。
@@ -53,6 +55,7 @@ image::cross-namespace-sharing.png[跨命名空间共享的概念图。]
 
 
 
+[[configure-the-source-and-destination-namespaces]]
 == 配置源命名空间和目标命名空间
 
 为确保安全，跨命名空间共享需要源命名空间所有者、集群管理员和目标命名空间所有者的协作和行动。用户角色在每个步骤中都会被指定。
@@ -133,12 +136,14 @@ Trident读取 `shareFromPVC`在目标 PVC 上添加注释，并将目标 PV 创�
 
 
 
+[[delete-a-shared-volume]]
 == 删除共享卷
 
 您可以删除跨多个命名空间共享的卷。 Trident将移除对源命名空间中该卷的访问权限，并保留对共享该卷的其他命名空间的访问权限。当所有引用该卷的命名空间都被删除后， Trident会删除该卷。
 
 
 
+[[use-tridentctl-get-to-query-subordinate-volumes]]
 == 使用 `tridentctl get`查询子卷
 
 使用该[`tridentctl`实用程序，您可以运行该 `get`命令来获取从属卷。有关详细信息，请参阅链接：../trident-managing-k8s/tridentctl.html[`tridentctl`命令和选项]。
@@ -157,6 +162,7 @@ Usage:
 
 
 
+[[limitations]]
 == 限制
 
 * Trident无法阻止目标命名空间写入共享卷。您应该使用文件锁定或其他方法来防止覆盖共享卷数据。
@@ -166,6 +172,7 @@ Usage:
 
 
 
+[[for-more-information]]
 == 了解更多信息
 
 要了解有关跨命名空间卷访问的更多信息：

@@ -74,8 +74,6 @@
   <block id="cb2e2f8e2789874710f34e485efc824e" category="list-text">2025年2月27日：<block ref="46c84c372fb557e16383c0494f1255f5" category="inline-link-macro-rx"></block></block>
   <block id="6dc79a8e11fda729083bb4e518de411f" category="inline-link-macro">Trident引入光纤通道支持</block>
   <block id="869493e7a782c2bac6bf8778d6bf749e" category="list-text">2024年12月12日：<block ref="5c3a9e150bc491524071eb191093dabe" category="inline-link-macro-rx"></block></block>
-  <block id="afd55df73a814282b1a34c79040d709a" category="inline-link-macro">Trident 25.01：通过新功能和增强功能增强 Kubernetes 存储体验</block>
-  <block id="13c401b1f27132099b945b95025ca748" category="list-text">2024年11月26日：<block ref="4a1bf3162dde1793089483cf7682fb86" category="inline-link-macro-rx"></block></block>
   <block id="0d5eeacaefc73b7986c8f85945c72129" category="inline-link-macro">NetApp Trident与Google Cloud NetApp Volumes</block>
   <block id="a21cecd213989d401167ec6cfba8d998" category="list-text">2024年11月11日：<block ref="daed3e0cfbeb06368e36167c5fc4f468" category="inline-link-macro-rx"></block></block>
   <block id="02104a16ef3fcf06a78872f4f5aea5d2" category="inline-link-macro">使用Trident在 AWS 上将Amazon FSx for NetApp ONTAP与 Red Hat OpenShift 服务 (ROSA) 结合使用</block>
@@ -3275,7 +3273,6 @@
   <block id="b73e3aa94514d51e32ca4c9fa306ce1e" category="inline-link-macro">使用卷组快照</block>
   <block id="cbe74dc7c890979d924675df2fa27a35" category="list-text">新增对 CSI 卷组快照的支持<block ref="ee21100dace47d83bcefcb7dea09cdd3" prefix=" " category="inline-code"></block>适用于ONTAP的卷组快照 Kubernetes API - SAN iSCSI 驱动程序。看<block ref="b136941d5c2c98d5e9ff86fd07e97048" category="inline-link-macro-rx"></block>。</block>
   <block id="9c3e7c7a7d7349669946d43b4988c3ed" category="admonition">VolumeGroupSnapshot 是 Kubernetes 中的一项测试版功能，其 API 也处于测试版阶段。  VolumeGroupSnapshot 所需的最低 Kubernetes 版本为 1.32。</block>
-  <block id="5e93028f6e11493fcce0c15271413cc3" category="list-text">除了 iSCSI 之外，还增加了对ONTAP ASA r2 的 NVMe/TCP 支持。看<block ref="0ffed2115293f61a0df2b3c8f01851e1" category="inline-link-macro-rx"></block>。</block>
   <block id="d5bb517310bc551b239857e32401ac1f" category="inline-link-macro">启用安全的 SMB</block>
   <block id="674d1c5daba14e57bb12199e316a830d" category="list-text">为ONTAP-NAS 和ONTAP-NAS-Economy 卷添加了安全的 SMB 支持。现在可以将 Active Directory 用户和组与 SMB 卷一起使用，以增强安全性。看<block ref="4f989a35378d98430cb4c4899de0cc08" category="inline-link-macro-rx"></block>。</block>
   <block id="6bcdf917188bd0a976b410952a796d4b" category="list-text">增强Trident节点并发性，以提高 iSCSI 卷节点操作的可扩展性。</block>
@@ -5789,7 +5786,6 @@
   <block id="77b3d37737668900e7a3090c236b1f43" category="paragraph"><block ref="edd2b7aa1c7509676e2980018fef6c49" category="inline-link-rx"></block> 是一种云原生文件服务，通过 NFS 提供 NAS 卷，具有全闪存性能。此服务可让任何工作负载（包括旧版应用程序）在 GCP 云中运行。它提供完全托管的服务，提供一致的高性能、即时克隆、数据保护以及对 Google Compute Engine (GCE) 实例的安全访问。</block>
   <block id="365f044223bbae18d908189b4742ff4c" category="paragraph"><block ref="365f044223bbae18d908189b4742ff4c" category="inline-link-macro-rx"></block></block>
   <block id="dde53589c85fa1215e4a3d3c3a0d6508" category="paragraph">请检查 <block ref="90e03a843b5d1f923d0ef6b32fbf11b0" category="inline-link-macro-rx"></block> 以确保您已满足安装先决条件，并为您的环境选择了正确的安装选项。</block>
-  <block id="432cd8287366758f4223f1c5245523ef" category="paragraph">除了 <block ref="cb461850825fa08fd17f7c70933db3ad" category="inline-link-macro-rx"></block> 之外，您还需要 <block ref="fc0cdbd8defe0c7175199dd05a0f8e76" category="inline-link-macro-rx"></block>。</block>
   <block id="e9d36c266026dc04d43783120d0a2d1d" category="paragraph">登录到 Linux 主机并验证其是否正在管理工作和<block ref="958ebeab180637e89445160bac2d22e7" category="inline-link-macro-rx"></block>并且您具有必要的权限。</block>
   <block id="e08aa9733b358be898c1a23e54767488" category="paragraph">现在，您可以创建<block ref="ae61bf6af1a7406b62c72a4bef1ab62d" prefix=" " category="inline-code"></block>并安装 Trident。也可以进一步<block ref="93723b460d95729b0db861ca40b75451" category="inline-link-macro-rx"></block>使用<block ref="ae61bf6af1a7406b62c72a4bef1ab62d" prefix=" " category="inline-code"></block>规范中的属性。以下示例显示了 Trident 和 CSI 映像位于不同注册表中的安装。</block>
   <block id="6e0142dfd4a5236fbce5c22e4e30fc2b" category="paragraph">在开始安装之前，请登录到 Linux 主机并验证其是否正在管理工作，<block ref="958ebeab180637e89445160bac2d22e7" category="inline-link-macro-rx"></block>以及您是否具有必要的权限。</block>
@@ -5799,7 +5795,6 @@
   <block id="799c345f132bca7bd3f7831646af862a" category="list-text">运行受支持的 Kubernetes 版本的受支持的 Kubernetes 集群的完整权限，并启用了功能要求。查看 <block ref="6fc1811f5f9a8ae54793544600e2dff7" category="inline-link-macro-rx"></block> 了解详情。</block>
   <block id="53190f03e7916b76ac1dae85cd9f714d" category="paragraph">选择适合您的安装方法。您还应该在做出决定之前查看 <block ref="cb44df0d8ea15fb8f4e6f4865b127ff3" category="inline-link-macro-rx"></block> 的注意事项。</block>
   <block id="3414d76eecba8d4a7dd3caeee51a228e" category="paragraph">无论是手动部署还是使用 Helm，Trident 操作员都是简化安装和动态管理 Trident 资源的好方法。您甚至可以<block ref="68a5e6b16e315077f5a728df34950477" category="inline-link-macro-rx"></block>使用<block ref="ae61bf6af1a7406b62c72a4bef1ab62d" prefix=" " category="inline-code"></block>自定义资源 (CR) 中的属性。</block>
-  <block id="fae1e7f86cb211636a091c9d2da4c50e" category="paragraph">如果您现有的部署必须升级，或者您希望高度自定义部署，则应考虑 <block ref="9359cc6d840947eb123c12a87c8b9379" category="inline-link-macro-rx"></block>。这是部署 Trident 的常规方法。</block>
   <block id="99dfcfbdae9622fb1ff9ca76d02a7013" category="paragraph">您可以<block ref="cb3e983f00bb9bff125f7a5f93a6bb2d" category="inline-link-macro-rx"></block>为 Trident 资源生成清单。这包括部署、守护程序集、服务帐户以及 Trident 在安装过程中创建的集群角色。</block>
   <block id="778f8fc1f45a4176e0a6dc6c0c8048d8" category="paragraph">安装和升级 Trident 的众多<block ref="2b6c752c2a0adaf915d24df45e6dabc3" category="inline-link-macro-rx"></block>之一是自动处理 Trident 和 Kubernetes 对象，而不会中断现有的已挂载卷。通过这种方式，Trident 可以支持零停机时间升级，或<block ref="c0fb6b6f12bb8ae805a97690328ec023" category="inline-link-macro-rx"></block>。特别是，Trident 操作程序与 Kubernetes 集群进行通信以：</block>
   <block id="c4ca8360dfbe09e499694a13ac8fc34c" category="paragraph">您可以使用 Trident 操作员手动或使用 Helm 升级 Trident。您可以从 Trident 操作员安装升级到另一个 Trident 操作员安装，或从<block ref="c67fd1b99934afa248dfeb285a9a4191" prefix=" " category="inline-code"></block>安装升级到 Trident 操作员版本。在升级 Trident 操作员安装之前，请查看<block ref="ad3ae3ba576f54a9ed86202bbeedc293" category="inline-link-macro-rx"></block>。</block>
@@ -5828,4 +5823,7 @@
   <block id="4d7f894e8ec350a861c28ea984648f59" category="paragraph">要配置和使用<block ref="22ab900b028c044945b4dba56093fe8f" category="inline-link-rx"></block>后端，您需要以下内容：</block>
   <block id="9ea1dc44c501f59786a0dd2c5ebc2d21" category="list-text">Trident AutoSupport 不会收集或传输个人身份信息 (PII) 或个人信息。它附带<block ref="ea14b34590cee15ec565ad8fd8feca2e" category="inline-link-rx"></block>，不适用于 Trident 容器图像本身。您可以了解有关 NetApp 对数据安全和信任承诺的更多信息<block ref="ea3b01bc03342a227ac7c6848f1e44fa" category="inline-link-rx"></block>。</block>
   <block id="0aed33e870a02a203987e1f6cbeb75d8" category="list-text">使用 Trident 与<block ref="5990d744db8a85d254742635736f0912" category="inline-link-rx"></block>时可能遇到的一个常见问题是，租户和客户端密码来自权限不足的应用程序注册。有关 Trident 要求的完整列表，请参阅<block ref="afedf4ee56554ea6e6b54e6aa206680c" category="inline-link-macro-rx"></block>配置。</block>
+  <block id="db7fc8df66e930e05282807a6ebd58f4" category="paragraph">除了 <block ref="1feb3274d112f2cef694d133af384cac" category="inline-link-macro-rx"></block> 之外，您还需要 <block ref="fc0cdbd8defe0c7175199dd05a0f8e76" category="inline-link-macro-rx"></block>。</block>
+  <block id="c82b4b0fab3872638ac3c7cebf4e6354" category="paragraph">如果您现有的部署必须升级，或者您希望高度自定义部署，则应考虑 <block ref="e214bf159dbaf6573cfe15f1373b92db" category="inline-link-macro-rx"></block>。这是部署 Trident 的常规方法。</block>
+  <block id="cd133424a13afaa0badf4f13c4bf4c72" category="list-text">除了 iSCSI 之外，还增加了对 NVMe/TCP 的 ONTAP ASA r2 的支持。请参阅 <block ref="f2fd3fe662daf33e514604a72251389c" category="inline-link-macro-rx"></block>。</block>
 </blocks>

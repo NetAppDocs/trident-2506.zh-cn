@@ -16,6 +16,7 @@ summary: 了解更多关于Trident通信所使用的端口的信息。
 
 
 
+[[trident-ports]]
 == Trident港口
 
 Trident使用以下端口在 Kubernetes 内部进行通信：

@@ -16,6 +16,7 @@ Trident操作符允许您使用属性自定义Trident安装。 `TridentOrchestra
 
 
 
+[[understanding-controller-pods-and-node-pods]]
 == 了解控制器 pod 和节点 pod
 
 Trident以单个控制器 pod 的形式运行，集群中的每个工作节点上还有一个节点 pod。节点 pod 必须运行在您希望挂载Trident卷的任何主机上。
@@ -28,6 +29,7 @@ Kuberneteslink:https://kubernetes.io/docs/concepts/scheduling-eviction/assign-po
 
 
 
+[[configuration-options]]
 == 配置选项
 
 
@@ -147,6 +149,7 @@ NOTE: 有关格式化 pod 参数的更多信息，请参阅link:https://kubernet
 
 
 
+[[details-about-force-detach]]
 === 强制分离的详细信息
 
 强制分离功能可用 `ontap-san`， `ontap-san-economy` ， `ontap-nas` ， 和 `ontap-nas-economy`仅有的。在启用强制分离之前，必须在 Kubernetes 集群上启用非正常节点关闭 (NGNS)。Kubernetes 1.28 及以上版本默认启用 NGNS。更多信息，请参阅link:https://kubernetes.io/docs/concepts/cluster-administration/node-shutdown/#non-graceful-node-shutdown["Kubernetes：节点非优雅关闭"^]。
@@ -175,6 +178,7 @@ NOTE: Trident控制器将拒绝新的发布卷请求，直到节点重新获得�
 
 
 
+[[sample-configurations]]
 == 示例配置
 
 您可以使用以下属性<<配置选项>>在定义时 `TridentOrchestrator`自定义您的安装。

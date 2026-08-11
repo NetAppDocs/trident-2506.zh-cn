@@ -16,6 +16,7 @@ summary: 了解如何在Trident安装中创建和使用ONTAP NAS 驱动程序。
 
 
 
+[[backend-configuration-options]]
 == 后端配置选项
 
 请参阅下表了解后端配置选项：
@@ -127,6 +128,7 @@ NOTE: 当 SVM 中的聚合列表更新时， Trident会通过轮询 SVM 自动�
 |===
 
 
+[[backend-configuration-options-for-provisioning-volumes]]
 == 卷配置的后端配置选项
 
 您可以使用以下选项控制默认配置。 `defaults`配置部分。例如，请参见下面的配置示例。
@@ -182,6 +184,7 @@ NOTE: 将 QoS 策略组与Trident结合使用需要ONTAP 9.8 或更高版本。�
 
 
 
+[[volume-provisioning-examples]]
 === 卷配置示例
 
 以下是一个定义了默认值的示例：
@@ -229,6 +232,7 @@ image::../media/volume-show-nas.png[显示 volume show 命令的输出结果。]
 
 
 
+[[minimal-configuration-examples]]
 == 最小配置示例
 
 以下示例展示了基本配置，其中大多数参数都保留默认值。这是定义后端最简单的方法。
@@ -411,6 +415,7 @@ labels:
 ====
 
 
+[[examples-of-backends-with-virtual-pools]]
 == 具有虚拟池的后端示例
 
 在下方所示的示例后端定义文件中，所有存储池都设置了特定的默认值，例如： `spaceReserve`没有， `spaceAllocation`为假，并且 `encryption`错误。虚拟池在存储部分中定义。
@@ -596,6 +601,7 @@ storage:
 ====
 
 
+[[map-backends-to-storageclasses]]
 == 将后端映射到存储类
 
 以下 StorageClass 定义指的是<<具有虚拟池的后端示例>>。使用 `parameters.selector`字段中，每个 StorageClass 都会指定哪些虚拟池可用于托管卷。卷将具有所选虚拟池中定义的各个方面。
@@ -671,6 +677,7 @@ Trident将决定选择哪个虚拟池，并确保满足存储需求。
 
 
 
+[[update-datalif-after-initial-configuration]]
 == 更新 `dataLIF`初始配置后
 
 初始配置完成后，您可以通过运行以下命令来更改 dataLIF，从而为新的后端 JSON 文件提供更新后的 dataLIF。
@@ -684,10 +691,12 @@ NOTE: 如果 PVC 连接到一个或多个舱体，则必须将所有相应的舱
 
 
 
+[[secure-smb-examples]]
 == 安全的中小企业示例
 
 
 
+[[backend-configuration-with-ontap-nas-driver]]
 === 使用 ontap-nas 驱动程序进行后端配置
 
 [source, yaml]
@@ -710,6 +719,7 @@ spec:
 ----
 
 
+[[backend-configuration-with-ontap-nas-economy-driver]]
 === 使用 ontap-nas-economy 驱动程序进行后端配置
 
 [source, yaml]
@@ -732,6 +742,7 @@ spec:
 ----
 
 
+[[backend-configuration-with-storage-pool]]
 === 后端配置及存储池
 
 [source, yaml]
@@ -759,6 +770,7 @@ spec:
 ----
 
 
+[[storage-class-example-with-ontap-nas-driver]]
 === 使用 ontap-nas 驱动程序的存储类示例
 
 [source, yaml]
@@ -784,6 +796,7 @@ NOTE: 请确保添加 `annotations`实现安全的SMB。如果没有注释，无
 
 
 
+[[storage-class-example-with-ontap-nas-economy-driver]]
 === 使用 ontap-nas-economy 驱动程序的存储类示例
 
 [source, yaml]
@@ -806,6 +819,7 @@ volumeBindingMode: Immediate
 ----
 
 
+[[pvc-example-with-a-single-ad-user]]
 === 包含单个 AD 用户的 PVC 示例
 
 [source, yaml]
@@ -831,6 +845,7 @@ spec:
 ----
 
 
+[[pvc-example-with-multiple-ad-users]]
 === 包含多个 AD 用户的 PVC 示例
 
 [source, yaml]

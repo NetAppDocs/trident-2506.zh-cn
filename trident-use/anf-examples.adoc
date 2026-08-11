@@ -16,6 +16,7 @@ summary: 了解Azure NetApp Files的 NFS 和 SMB 后端配置选项，并查看�
 
 
 
+[[backend-configuration-options]]
 == 后端配置选项
 
 Trident使用您的后端配置（子网、虚拟网络、服务级别和位置），在请求的位置中可用的容量池上创建Azure NetApp Files卷，并与请求的服务级别和子网相匹配。
@@ -100,6 +101,7 @@ NOTE: 有关网络功能的更多信息，请参阅link:https://docs.microsoft.c
 
 
 
+[[required-permissions-and-resources]]
 === 所需权限和资源
 
 如果在创建 PVC 时收到“未找到容量池”错误，则可能是您的应用程序注册没有关联的必要权限和资源（子网、虚拟网络、容量池）。如果启用调试功能， Trident将记录在创建后端时发现的 Azure 资源。请确认是否使用了合适的角色。
@@ -129,6 +131,7 @@ NOTE: 有关网络功能的更多信息，请参阅link:https://docs.microsoft.c
 |===
 
 
+[[volume-provisioning]]
 === 卷配置
 
 您可以通过在配置文件的特定部分中指定以下选项来控制默认卷配置。参考 <<示例配置>> 了解详情。
@@ -152,6 +155,7 @@ NOTE: 有关网络功能的更多信息，请参阅link:https://docs.microsoft.c
 |===
 
 
+[[example-configurations]]
 == 示例配置
 
 以下示例展示了基本配置，其中大多数参数都保留默认值。这是定义后端最简单的方法。
@@ -393,12 +397,14 @@ supportedTopologies:
 ====
 
 
+[[storage-class-definitions]]
 == 存储类定义
 
 下列 `StorageClass`上述定义指的是存储池。
 
 
 
+[[example-definitions-using-parameter-selector-field]]
 === 使用示例定义 `parameter.selector`场地
 
 使用 `parameter.selector`你可以为每个对象指定。 `StorageClass`用于托管卷的虚拟池。该卷将具有所选池中定义的方面。
@@ -437,6 +443,7 @@ allowVolumeExpansion: true
 ----
 
 
+[[example-definitions-for-smb-volumes]]
 === SMB卷的示例定义
 
 使用 `nasType`， `node-stage-secret-name` ， 和 `node-stage-secret-namespace`您可以指定 SMB 卷并提供所需的 Active Directory 凭据。
@@ -497,6 +504,7 @@ NOTE: `nasType: smb`筛选支持 SMB 卷的存储池。 `nasType: nfs`或者 `na
 
 
 
+[[create-the-backend]]
 == 创建后端
 
 创建后端配置文件后，运行以下命令：

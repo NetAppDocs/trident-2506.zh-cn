@@ -16,6 +16,7 @@ summary: 如果您更喜欢与 Trident 的 REST API 进行交互，可以直接�
 
 
 
+[[when-to-use-the-rest-api]]
 == 何时使用 REST API
 
 REST API 适用于在非 Kubernetes 部署中使用Trident作为独立二进制文件的高级安装。
@@ -24,6 +25,7 @@ REST API 适用于在非 Kubernetes 部署中使用Trident作为独立二进制�
 
 
 
+[[using-rest-api]]
 == 使用 REST API
 
 要查看这些 API 的调用示例，请传递调试信息。(`-d` ） 旗帜。更多信息，请参阅link:../trident-managing-k8s/tridentctl.html["使用 tridentctl 管理Trident"]。
@@ -32,6 +34,7 @@ API 的工作原理如下：
 
 
 
+[[get]]
 === GET
 
 `GET <trident-address>/trident/v1/<object-type>`:: 列出该类型的所有对象。
@@ -40,6 +43,7 @@ API 的工作原理如下：
 
 
 
+[[post]]
 === POST
 
 `POST <trident-address>/trident/v1/<object-type>`:: 创建指定类型的对象。
@@ -54,6 +58,7 @@ API 的工作原理如下：
 
 
 
+[[delete]]
 === DELETE
 
 `DELETE <trident-address>/trident/v1/<object-type>/<object-name>`:: 删除指定的资源。

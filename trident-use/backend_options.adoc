@@ -16,6 +16,7 @@ summary: 了解Trident中管理后端的不同方法。
 
 
 
+[[options-for-managing-backends]]
 == 后端管理选项
 
 随着 `TridentBackendConfig`现在，管理员有两种独特的后端管理方式。这就引出了以下问题：
@@ -26,6 +27,7 @@ summary: 了解Trident中管理后端的不同方法。
 
 
 
+[[manage-tridentctl-backends-using-tridentbackendconfig]]
 == 管理 `tridentctl`使用后端 `TridentBackendConfig`
 
 本节介绍管理使用以下方式创建的后端所需的步骤： `tridentctl`直接通过 Kubernetes 接口创建 `TridentBackendConfig`物体。
@@ -50,6 +52,7 @@ summary: 了解Trident中管理后端的不同方法。
 
 
 
+[[step-0-identify-the-backend]]
 === 步骤 0：确定后端
 
 创建一个 `TridentBackendConfig`如果要绑定到现有后端，则需要获取后端配置。在这个例子中，我们假设使用以下 JSON 定义创建了一个后端：
@@ -116,6 +119,7 @@ cat ontap-nas-backend.json
 ----
 
 
+[[step-1-create-a-kubernetes-secret]]
 === 步骤 1：创建 Kubernetes Secret
 
 创建一个包含后端凭据的 Secret，如下例所示：
@@ -142,6 +146,7 @@ secret/backend-tbc-ontap-san-secret created
 ----
 
 
+[[step-2-create-a-tridentbackendconfig-cr]]
 === 步骤 2：创建 `TridentBackendConfig`CR
 
 下一步是创建一个 `TridentBackendConfig`CR 将自动绑定到预先存在的 `ontap-nas-backend`（如本例所示）。请确保满足以下要求：
@@ -204,6 +209,7 @@ tridentbackendconfig.trident.netapp.io/tbc-ontap-nas-backend created
 ----
 
 
+[[step-3-verify-the-status-of-the-tridentbackendconfig-cr]]
 === 步骤 3：验证状态 `TridentBackendConfig`CR
 
 之后 `TridentBackendConfig`已经创建，它的阶段必须是 `Bound`。它还应该反映与现有后端相同的后端名称和 UUID。
@@ -226,12 +232,14 @@ tridentctl get backend -n trident
 
 
 
+[[manage-tridentbackendconfig-backends-using-tridentctl]]
 == 管理 `TridentBackendConfig`使用后端 `tridentctl`
 
  `tridentctl`可用于列出使用以下方式创建的后端： `TridentBackendConfig` 。此外，管理员还可以选择通过以下方式完全管理此类后端： `tridentctl`通过删除 `TridentBackendConfig`并确保 `spec.deletionPolicy`设置为 `retain`。
 
 
 
+[[step-0-identify-the-backend]]
 === 步骤 0：确定后端
 
 例如，假设我们使用以下方式创建了以下后端 `TridentBackendConfig`：
@@ -253,6 +261,7 @@ tridentctl get backend ontap-san-backend -n trident
 
 
 
+[[step-1-confirm-deletionpolicy-is-set-to-retain]]
 === 步骤 1：确认 `deletionPolicy`设置为 `retain`
 
 让我们来看看它的价值 `deletionPolicy`。需要将其设置为 `retain`。这确保了当 `TridentBackendConfig`CR 被删除后，后端定义仍然存在，并且可以通过以下方式进行管理： `tridentctl` 。
@@ -277,6 +286,7 @@ NOTE: 除非另有说明，否则请勿进行下一步。 `deletionPolicy`设置
 
 
 
+[[step-2-delete-the-tridentbackendconfig-cr]]
 === 步骤二：删除 `TridentBackendConfig`CR
 
 最后一步是删除 `TridentBackendConfig`CR。确认后 `deletionPolicy`设置为 `retain`您可以继续删除：

@@ -16,12 +16,14 @@ summary: Kubernetes 集群通常由两种类型的节点组成，每种节点负
 
 
 
+[[driver-selection-and-deployment]]
 == 驾驶员选择和部署
 
 为您的存储系统选择并部署后端驱动程序。
 
 
 
+[[ontap-backend-drivers]]
 === ONTAP后端驱动程序
 
 ONTAP后端驱动程序的区别在于所使用的协议以及在存储系统上配置卷的方式。因此，在决定部署哪位驾驶员时要仔细考虑。
@@ -78,18 +80,21 @@ NOTE: 这 `solidfire-san`驱动程序还能够克隆PVC。
 
 
 
+[[cloud-volumes-ontap-backend-drivers]]
 === Cloud Volumes ONTAP后端驱动程序
 
 Cloud Volumes ONTAP提供数据控制以及企业级存储功能，适用于各种用例，包括文件共享和块级存储，支持 NAS 和 SAN 协议（NFS、SMB / CIFS 和 iSCSI）。 Cloud Volume ONTAP的兼容驱动程序有： `ontap-nas` ， `ontap-nas-economy` ， `ontap-san`和 `ontap-san-economy`。这些适用于 Azure 版 Cloud Volume ONTAP和 GCP 版 Cloud Volume ONTAP 。
 
 
 
+[[amazon-fsx-for-ontap-backend-drivers]]
 === Amazon FSx for ONTAP后端驱动程序
 
 Amazon FSx for NetApp ONTAP让您能够利用您熟悉的NetApp功能、性能和管理能力，同时享受在 AWS 上存储数据的简单性、敏捷性、安全性和可扩展性。  FSx for ONTAP支持许多ONTAP文件系统功能和管理 API。  Cloud Volume ONTAP的兼容驱动程序有： `ontap-nas` ， `ontap-nas-economy` ， `ontap-nas-flexgroup` ， `ontap-san`和 `ontap-san-economy`。
 
 
 
+[[netapp-hcisolidfire-backend-drivers]]
 === NetApp HCI/ SolidFire后端驱动程序
 
 这 `solidfire-san`该驱动程序与NetApp HCI/ SolidFire平台配合使用，可帮助管理员根据 QoS 限制为Trident配置 Element 后端。如果您希望设计后端以设置Trident所配置卷的特定 QoS 限制，请使用以下方法： `type`后端文件中的参数。管理员还可以使用以下方法限制可在存储上创建的卷大小： `limitVolumeSize`范围。目前，Element 存储功能（例如卷调整大小和卷复制）尚不支持通过以下方式进行存储： `solidfire-san`司机。这些操作应该通过 Element Software 的 Web 用户界面手动完成。
@@ -106,6 +111,7 @@ Amazon FSx for NetApp ONTAP让您能够利用您熟悉的NetApp功能、性能�
 
 
 
+[[azure-netapp-files-backend-drivers]]
 === Azure NetApp Files后端驱动程序
 
 Trident 使用  `azure-netapp-files` 驱动程序来管理 link:https://azure.microsoft.com/en-us/products/netapp/["Azure NetApp Files"^] 服务。
@@ -124,6 +130,7 @@ Trident 使用  `azure-netapp-files` 驱动程序来管理 link:https://azure.mi
 
 
 
+[[cloud-volumes-service-on-google-cloud-backend-driver]]
 === Google Cloud 后端驱动程序上的Cloud Volumes Service
 
 Trident使用 `gcp-cvs`用于连接 Google Cloud 上的Cloud Volumes Service的驱动程序。
@@ -155,12 +162,14 @@ Trident使用 `gcp-cvs`用于连接 Google Cloud 上的Cloud Volumes Service的�
 ====
 
 
+[[storage-class-design]]
 == 存储类设计
 
 要创建 Kubernetes 存储类对象，需要对各个存储类进行配置和应用。本节讨论如何为您的应用程序设计存储类。
 
 
 
+[[specific-backend-utilization]]
 === 具体后端利用
 
 在特定的存储类对象中可以使用过滤来确定要与该特定存储类一起使用的存储池或存储池集。存储类中可以设置三组过滤器： `storagePools` ， `additionalStoragePools`和/或 `excludeStoragePools`。
@@ -171,18 +180,21 @@ Trident使用 `gcp-cvs`用于连接 Google Cloud 上的Cloud Volumes Service的�
 
 
 
+[[emulate-qos-policies]]
 === 模拟 QoS 策略
 
 如果您希望设计存储类来模拟服务质量策略，请创建一个具有以下功能的存储类： `media`属性为 `hdd`或者 `ssd`。基于 `media`根据存储类中提到的属性， Trident将选择合适的后端来提供服务。 `hdd`或者 `ssd`将聚合与媒体属性匹配，然后将卷的配置定向到特定的聚合上。因此，我们可以创建一个 PREMIUM 存储类，它将具有 `media`属性集为 `ssd`这可以归类为高级 QoS 策略。我们可以创建另一个存储类 STANDARD，其媒体属性设置为“hdd”，这可以归类为 STANDARD QoS 策略。我们还可以使用存储类中的“IOPS”属性将配置重定向到 Element 设备，该设备可以定义为 QoS 策略。
 
 
 
+[[utilize-backend-based-on-specific-features]]
 === 根据特定功能使用后端
 
 存储类可以设计为在特定的后端上指导卷配置，其中启用了精简配置和厚配置、快照、克隆和加密等功能。要指定要使用的存储，请创建存储类，指定启用所需功能的相应后端。
 
 
 
+[[virtual-pools]]
 === 虚拟池
 
 所有Trident后端均可使用虚拟池。你可以使用Trident提供的任何驱动程序，为任何后端定义虚拟池。
@@ -191,6 +203,7 @@ Trident使用 `gcp-cvs`用于连接 Google Cloud 上的Cloud Volumes Service的�
 
 
 
+[[virtual-pool-design]]
 == 虚拟泳池设计
 
 创建后端时，通常可以指定一组参数。管理员无法创建具有相同存储凭据和不同参数集的另一个后端。随着虚拟池的引入，这个问题得到了缓解。虚拟池是在后端和 Kubernetes 存储类之间引入的级别抽象，以便管理员可以定义参数以及可以通过 Kubernetes 存储类作为选择器引用的标签，以与后端无关的方式。可以使用Trident为所有受支持的NetApp后端定义虚拟池。该列表包括SolidFire/ NetApp HCI、 ONTAP、GCP 上的Cloud Volumes Service以及Azure NetApp Files。
@@ -200,24 +213,28 @@ NOTE: 定义虚拟池时，建议不要尝试在后端定义中重新排列现�
 
 
 
+[[emulating-different-service-levelsqos]]
 === 模拟不同的服务级别/QoS
 
 可以设计虚拟池来模拟服务类。使用Azure NetApp Files云卷服务的虚拟池实现，让我们来研究如何设置不同的服务类。配置Azure NetApp Files后端，使用多个标签来表示不同的性能级别。放 `servicelevel`将各个方面调整到相应的性能水平，并在每个标签下添加其他所需的方面。现在创建不同的 Kubernetes 存储类，将它们映射到不同的虚拟池。使用 `parameters.selector`字段中，每个 StorageClass 都会指定哪些虚拟池可用于托管卷。
 
 
 
+[[assigning-specific-set-of-aspects]]
 === 指定一组特定的方面
 
 可以从单个存储后端设计多个具有特定功能的虚拟池。为此，请在后端配置多个标签，并在每个标签下设置所需的方面。现在使用以下方式创建不同的 Kubernetes 存储类： `parameters.selector`该字段将映射到不同的虚拟池。后端配置的卷将具有所选虚拟池中定义的方面。
 
 
 
+[[pvc-characteristics-which-affect-storage-provisioning]]
 === 影响存储供应的PVC特性
 
 在创建 PVC 时，除请求的存储类别之外的某些参数可能会影响Trident 的配置决策过程。
 
 
 
+[[access-mode]]
 === 访问模式
 
 通过 PVC 请求存储时，必填字段之一是访问模式。所需的模式可能会影响用于托管存储请求的后端选择。
@@ -238,10 +255,12 @@ Trident将尝试根据以下矩阵将所使用的存储协议与指定的访问�
 
 
 
+[[volume-operations]]
 == 卷操作
 
 
 
+[[modify-persistent-volumes]]
 === 修改持久卷
 
 除两种例外情况外，持久卷是 Kubernetes 中的不可变对象。创建完成后，可以修改回收策略和大小。然而，这并不能阻止在 Kubernetes 之外修改卷的某些方面。为了针对特定应用定制卷，确保容量不会意外耗尽，或者出于任何原因将卷移动到不同的存储控制器，这样做可能是可取的。
@@ -253,18 +272,21 @@ PV的连接详情创建后无法修改。
 
 
 
+[[create-on-demand-volume-snapshots]]
 === 创建按需卷快照
 
 Trident支持按需创建卷快照，并支持使用 CSI 框架从快照创建 PVC。快照提供了一种便捷的方法来维护数据在特定时间点的副本，并且在 Kubernetes 中具有独立于源 PV 的生命周期。这些快照可用于克隆PVC。
 
 
 
+[[create-volumes-from-snapshots]]
 === 从快照创建卷
 
 Trident还支持从卷快照创建持久卷。要实现这一点，只需创建一个 PersistentVolumeClaim 并指定 `datasource`作为创建卷所需的快照。 Trident将通过创建一个包含快照中数据的卷来处理此 PVC。借助此功能，可以跨区域复制数据、创建测试环境、完全替换损坏或已损坏的生产卷，或者检索特定文件和目录并将其传输到另一个附加卷。
 
 
 
+[[move-volumes-in-the-cluster]]
 === 在集群中移动卷
 
 存储管理员能够在ONTAP集群中，在聚合和控制器之间移动卷，而不会对存储用户造成任何干扰。只要目标聚合是Trident使用的 SVM 可以访问的目标聚合，此操作就不会影响Trident或 Kubernetes 集群。重要的是，如果聚合体是新添加到 SVM 中的，则需要通过将其重新添加到Trident来刷新后端。这将触发Trident重新清点 SVM，以便识别新的聚合体。
@@ -275,12 +297,14 @@ Trident还支持从卷快照创建持久卷。要实现这一点，只需创建�
 
 
 
+[[expand-volumes]]
 === 扩大规模
 
 Trident支持调整 NFS、iSCSI 和 FC PV 的大小。这样用户就可以直接通过 Kubernetes 层调整卷的大小。所有主流NetApp存储平台，包括ONTAP、 SolidFire/ NetApp HCI和Cloud Volumes Service后端，均可进行卷扩展。为了便于日后扩展，请设置 `allowVolumeExpansion`到 `true`在与该卷关联的 StorageClass 中。每当需要调整持久卷的大小时，请编辑以下内容： `spec.resources.requests.storage`在持久卷声明中添加对所需卷大小的注释。  Trident会自动处理存储集群上卷的大小调整。
 
 
 
+[[import-an-existing-volume-into-kubernetes]]
 === 将现有卷导入 Kubernetes
 
 卷导入功能允许将现有存储卷导入 Kubernetes 环境。目前这得到了以下方面的支持： `ontap-nas` ， `ontap-nas-flexgroup` ， `solidfire-san` ， `azure-netapp-files` ， 和 `gcp-cvs`司机。将现有应用程序移植到 Kubernetes 或灾难恢复场景中，此功能非常有用。
@@ -295,12 +319,14 @@ Trident支持调整 NFS、iSCSI 和 FC PV 的大小。这样用户就可以直�
 
 
 
+[[registry-service]]
 === 注册服务
 
 注册表存储的部署和管理已在文档中记录。link:https://netapp.io/["netapp.io"^]在link:https://netapp.io/2017/08/24/deploying-the-openshift-registry-using-netapp-storage/["博客"^]。
 
 
 
+[[logging-service]]
 === 日志服务
 
 与其他 OpenShift 服务一样，日志服务使用 Ansible 进行部署，配置参数由提供给 playbook 的清单文件（又名 hosts）提供。本文将介绍两种安装方法：在 OpenShift 初始安装期间部署日志记录和在 OpenShift 安装完成后部署日志记录。
@@ -382,6 +408,7 @@ NOTE: 下表仅包含与日志服务相关的存储配置变量。您还可以�
 
 
 
+[[metrics-service]]
 == 指标服务
 
 指标服务为管理员提供有关 OpenShift 集群的状态、资源利用率和可用性的宝贵信息。此外，它对于 pod 自动扩展功能也是必要的，许多组织使用指标服务中的数据进行费用分摊和/或收益展示应用程序。
@@ -430,6 +457,7 @@ NOTE: 下表仅包含与指标服务相关的存储配置变量。文档中还�
 |===
 
 
+[[deploy-the-metrics-service]]
 === 部署指标服务
 
 在 hosts/inventory 文件中定义了相应的 Ansible 变量后，使用 Ansible 部署服务。如果您在安装 OpenShift 时进行部署，则 PV 将自动创建和使用。如果您使用组件 playbook 进行部署，则在 OpenShift 安装之后，Ansible 会创建所需的任何 PVC，并在Trident为其配置存储之后部署服务。

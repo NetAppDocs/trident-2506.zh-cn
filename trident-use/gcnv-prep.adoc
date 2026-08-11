@@ -16,6 +16,7 @@ summary: 在配置Google Cloud NetApp Volumes后端之前，您需要确保满�
 
 
 
+[[prerequisites-for-nfs-volumes]]
 == NFS 卷的先决条件
 
 如果您是第一次使用Google Cloud NetApp Volumes或在新的位置使用，则需要进行一些初始配置来设置Google Cloud NetApp Volumes并创建 NFS 卷。参考link:https://cloud.google.com/netapp/volumes/docs/before-you-begin/application-resilience["开始之前"^]。

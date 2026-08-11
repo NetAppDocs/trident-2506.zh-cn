@@ -18,6 +18,7 @@ summary: 使用Trident Protect，您可以利用NetApp SnapMirror技术的异步
 
 
 
+[[namespace-annotations-and-labels-during-restore-and-failover-operations]]
 == 恢复和故障转移操作期间的命名空间注释和标签
 
 在恢复和故障转移操作期间，目标命名空间中的标签和注释将与源命名空间中的标签和注释相匹配。源命名空间中不存在的目标命名空间中的标签或注释将被添加，并且任何已存在的标签或注释都将被覆盖以匹配源命名空间中的值。仅存在于目标命名空间中的标签或注释保持不变。
@@ -38,6 +39,7 @@ NOTE: 执行恢复或故障转移操作时，任何命名空间注释和标签�
 
 
 
+[[example]]
 === 示例
 
 以下示例展示了源命名空间和目标命名空间，每个命名空间都有不同的注释和标签。您可以查看操作前后目标命名空间的状态，以及目标命名空间中的注释和标签是如何组合或覆盖的。
@@ -103,6 +105,7 @@ NOTE: 您可以配置Trident Protect 在数据保护操作期间冻结和解冻�
 
 
 
+[[execution-hooks-during-failover-and-reverse-operations]]
 == 故障转移和反向操作期间的执行钩子
 
 使用 AppMirror 关系保护应用程序时，在故障转移和反向操作期间，您应该注意与执行钩子相关的特定行为。
@@ -115,6 +118,7 @@ NOTE: 您可以配置Trident Protect 在数据保护操作期间冻结和解冻�
 
 
 
+[[set-up-a-replication-relationship]]
 == 建立复制关系
 
 建立复制关系涉及以下步骤：
@@ -446,6 +450,7 @@ kubectl get amr -n my-app-namespace <relationship name> -o=jsonpath='{.status}' 
 
 
 
+[[fail-over-to-destination-cluster]]
 === 故障转移到目标集群
 
 使用Trident Protect，您可以将复制的应用程序故障转移到目标集群。此过程会停止复制关系，并将应用程序在目标集群上联机。如果源集群上的应用程序正在运行， Trident Protect 不会停止该应用程序。
@@ -470,6 +475,7 @@ kubectl get amr -n my-app-namespace <relationship name> -o=jsonpath='{.status}' 
 
 
 
+[[resync-a-failed-over-replication-relationship]]
 === 重新同步失败的复制关系
 
 重新同步操作会重新建立复制关系。执行重新同步操作后，原始源应用程序将成为正在运行的应用程序，对目标集群上正在运行的应用程序所做的任何更改都将被丢弃。
@@ -494,6 +500,7 @@ kubectl apply -f trident-protect-relationship.yaml -n my-app-namespace
 
 
 
+[[reverse-resync-a-failed-over-replication-relationship]]
 === 反向重新同步失败的复制关系
 
 当您反向同步故障转移复制关系时，目标应用程序将变为源应用程序，而源应用程序将变为目标应用程序。故障转移期间对目标应用程序所做的更改将被保留。
@@ -507,6 +514,7 @@ kubectl apply -f trident-protect-relationship.yaml -n my-app-namespace
 
 
 
+[[reverse-application-replication-direction]]
 == 反向应用程序复制方向
 
 当您反转复制方向时， Trident Protect 会将应用程序移动到目标存储后端，同时继续复制回原始源存储后端。Trident Protect 会停止源应用程序并将数据复制到目标位置，然后再故障转移到目标应用程序。
@@ -593,6 +601,7 @@ NOTE: 在故障转移流程的第 2 步中，包括： `spec.promotedSnapshot`�
 
 
 
+[[result]]
 === 结果
 
 由于反向复制，会发生以下操作：
@@ -607,6 +616,7 @@ NOTE: 在故障转移流程的第 2 步中，包括： `spec.promotedSnapshot`�
 
 
 
+[[fail-back-applications-to-the-original-source-cluster]]
 === 将应用程序故障恢复到原始源集群
 
 使用Trident Protect，您可以通过以下步骤序列在故障转移操作后实现“故障恢复”。在此恢复原始复制方向的工作流程中， Trident Protect 会将任何应用程序更改复制（重新同步）回原始源应用程序，然后再反转复制方向。
@@ -629,6 +639,7 @@ CAUTION: 不要执行正常的重新同步操作，因为这将丢弃在故障�
 
 
 
+[[delete-a-replication-relationship]]
 === 删除复制关系
 
 您可以随时删除复制关系。删除应用程序复制关系后，将生成两个彼此独立的应用程序，它们之间没有任何关系。

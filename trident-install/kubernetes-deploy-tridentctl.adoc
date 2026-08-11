@@ -16,6 +16,7 @@ summary: '您可以使用以下方式安装Trident `tridentctl` 。此过程适�
 
 
 
+[[critical-information-about-trident-25-06]]
 == 关于Trident25.06的关键信息
 
 *您必须阅读以下关于Trident的重要信息。*
@@ -33,6 +34,7 @@ summary: '您可以使用以下方式安装Trident `tridentctl` 。此过程适�
 ====
 
 
+[[install-trident-using-tridentctl]]
 == 使用以下方式安装Trident `tridentctl`
 
 请检查 link:../trident-install/kubernetes-deploy.html["安装概述"] 以确保您已满足安装先决条件，并为您的环境选择了正确的安装选项。
@@ -69,6 +71,7 @@ kubectl run -i --tty ping --image=busybox --restart=Never --rm -- \
 ====
 
 
+[[step-1-download-the-trident-installer-package]]
 == 步骤 1：下载Trident安装包
 
 Trident安装程序包会创建一个Trident pod，配置用于维护其状态的 CRD 对象，并初始化 CSI sidecar 以执行诸如将卷配置并附加到集群主机之类的操作。从以下位置下载并解压最新版本的Trident安装程序link:https://github.com/NetApp/trident/releases/latest["GitHub 上的 _Assets_ 部分"^]。请使用您选择的Trident版本更新示例中的 _<trident-installer-XX.XX.X.tar.gz>_。
@@ -81,6 +84,7 @@ cd trident-installer
 ----
 
 
+[[step-2-install-trident]]
 == 步骤 2：安装Trident
 
 通过执行以下命令在所需的命名空间中安装Trident： `tridentctl install`命令。您可以添加其他参数来指定镜像仓库位置。
@@ -132,12 +136,14 @@ INFO Trident installation succeeded.
 ----
 
 
+[[verify-the-installation]]
 == 验证安装
 
 您可以使用 pod 创建状态或 pod 创建状态来验证您的安装。 `tridentctl` 。
 
 
 
+[[using-pod-creation-status]]
 === 使用 pod 创建状态
 
 您可以通过查看已创建的 pod 的状态来确认Trident安装是否完成：
@@ -155,6 +161,7 @@ NOTE: 如果安装程序未成功完成或 `trident-controller-<generated id>` (
 
 
 
+[[using-tridentctl]]
 === 使用 `tridentctl`
 
 您可以使用 `tridentctl`检查已安装的Trident版本。
@@ -171,6 +178,7 @@ NOTE: 如果安装程序未成功完成或 `trident-controller-<generated id>` (
 ----
 
 
+[[sample-configurations]]
 == 示例配置
 
 以下示例提供了使用Trident安装的示例配置。 `tridentctl` 。

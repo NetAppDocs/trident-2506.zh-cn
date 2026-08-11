@@ -16,6 +16,7 @@ summary: 了解如何准备配置带有ONTAP SAN 驱动程序的ONTAP后端。
 
 
 
+[[requirements]]
 == 要求
 
 对于所有ONTAP后端， Trident要求至少将一个聚合分配给 SVM。
@@ -29,6 +30,7 @@ NOTE: link:https://docs.netapp.com/us-en/asa-r2/get-started/learn-about.html["AS
 
 
 
+[[authenticate-the-ontap-backend]]
 == 对ONTAP后端进行身份验证
 
 Trident提供两种ONTAP后端身份验证方式。
@@ -44,6 +46,7 @@ WARNING: 如果您尝试同时提供凭据和证书，则后端创建将失败�
 
 
 
+[[enable-credential-based-authentication]]
 === 启用基于凭据的身份验证
 
 Trident需要 SVM 范围/集群范围管理员的凭据才能与ONTAP后端通信。建议使用标准的、预定义的角色，例如： `admin`或者 `vsadmin`。这样可以确保与未来ONTAP版本向前兼容，这些版本可能会公开一些功能 API，供未来的Trident版本使用。虽然可以创建自定义安全登录角色并将其与Trident一起使用，但不建议这样做。
@@ -87,6 +90,7 @@ password: password
 
 
 
+[[enable-certificate-based-authentication]]
 === 启用基于证书的身份验证
 
 新的和现有的后端都可以使用证书与ONTAP后端通信。后端定义需要三个参数。
@@ -172,6 +176,7 @@ tridentctl create backend -f cert-backend.json -n trident
 
 
 
+[[update-authentication-methods-or-rotate-credentials]]
 === 更新身份验证方法或轮换凭据
 
 您可以更新现有后端，以使用不同的身份验证方法或轮换其凭据。这种方法是双向的：使用用户名/密码的后端可以更新为使用证书；使用证书的后端可以更新为基于用户名/密码的后端。为此，您必须删除现有的身份验证方法并添加新的身份验证方法。然后使用包含所需参数的更新后的 backend.json 文件来执行 `tridentctl backend update`。
@@ -205,6 +210,7 @@ NOTE: 轮换密码时，存储管理员必须首先更新ONTAP上用户的密码
 
 
 
+[[create-custom-ontap-role-for-trident]]
 === 为Trident创建自定义ONTAP角色
 
 您可以创建一个具有最低权限的ONTAP集群角色，这样您就不必使用ONTAP管理员角色在Trident中执行操作。在Trident后端配置中包含用户名时， Trident将使用您创建的ONTAP集群角色来执行操作。
@@ -264,6 +270,7 @@ NOTE: 轮换密码时，存储管理员必须首先更新ONTAP上用户的密码
 
 
 
+[[authenticate-connections-with-bidirectional-chap]]
 == 使用双向 CHAP 验证连接
 
 Trident可以使用双向 CHAP 对 iSCSI 会话进行身份验证。 `ontap-san`和 `ontap-san-economy`司机。这需要启用 `useCHAP`在后端定义中添加选项。设置为 `true`Trident将 SVM 的默认发起程序安全配置为双向 CHAP，并从后端文件中设置用户名和密钥。 NetApp建议使用双向 CHAP 协议对连接进行身份验证。请参见以下示例配置：
@@ -291,6 +298,7 @@ WARNING: 这 `useCHAP`该参数是一个布尔选项，只能配置一次。默�
 
 
 
+[[how-it-works]]
 === 工作原理
 
 通过设置 `useCHAP`如果设置为 true，则存储管理员指示Trident在存储后端配置 CHAP。其中包括以下内容：
@@ -308,6 +316,7 @@ WARNING: 这 `useCHAP`该参数是一个布尔选项，只能配置一次。默�
 
 
 
+[[rotate-credentials-and-update-backends]]
 === 轮换凭证并更新后端
 
 您可以通过更新 CHAP 参数来更新 CHAP 凭据。 `backend.json`文件。这将需要更新 CHAP 密钥并使用 `tridentctl update`命令反映这些更改。

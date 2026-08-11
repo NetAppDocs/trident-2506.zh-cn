@@ -16,6 +16,7 @@ summary: 虚拟池在 Trident 的存储后端和 Kubernetes 的 StorageClasses �
 
 
 
+[[learn-about-virtual-pools]]
 == 了解虚拟泳池
 
 存储管理员可以在任何Trident后端上，通过 JSON 或 YAML 定义文件定义虚拟池。

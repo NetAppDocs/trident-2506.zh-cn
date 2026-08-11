@@ -16,6 +16,7 @@ summary: Trident提供了多种卷管理​​功能。了解Trident在大批量
 
 
 
+[[managing-volumes]]
 == 管理容量
 
 请参考以下内容，了解如何使用Trident管理您的卷。

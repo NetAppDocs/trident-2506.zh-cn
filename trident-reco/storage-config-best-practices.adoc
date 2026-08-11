@@ -16,6 +16,7 @@ NetApp产品组合中的每个存储平台都具有独特的功能，无论应�
 
 
 
+[[platform-overview]]
 == 平台概览
 
 Trident可与ONTAP和 Element 配合使用。没有哪个平台比其他平台更适合所有应用和场景，但是，在选择平台时，应该考虑应用的需求以及管理设备的团队的需求。
@@ -24,6 +25,7 @@ Trident可与ONTAP和 Element 配合使用。没有哪个平台比其他平台�
 
 
 
+[[ontap-and-cloud-volumes-ontap-best-practices]]
 == ONTAP和Cloud Volumes ONTAP最佳实践
 
 了解配置ONTAP和Cloud Volumes ONTAP for Trident 的最佳实践。
@@ -32,6 +34,7 @@ Trident可与ONTAP和 Element 配合使用。没有哪个平台比其他平台�
 
 
 
+[[use-svms-dedicated-to-trident]]
 === 使用专用于Trident 的SVM。
 
 存储虚拟机 (SVM) 为ONTAP系统上的租户提供隔离和管理分离。将 SVM 专用于应用程序可以实现权限委派，并可以应用限制资源消耗的最佳实践。
@@ -49,6 +52,7 @@ SVM的管理有多种选择：
 
 
 
+[[limit-the-maximum-volume-count]]
 === 限制最大体积数
 
 ONTAP存储系统有最大卷数限制，该限制会根据软件版本和硬件平台而有所不同。请参阅 https://hwu.netapp.com/["NetApp Hardware Universe"^]请根据您的具体平台和ONTAP版本确定确切的限制。当卷计数耗尽时，不仅Trident的配置操作会失败，而且所有存储请求的配置操作都会失败。
@@ -72,6 +76,7 @@ vserver modify -vserver <svm_name> -max-volumes <num_of_volumes>
 
 
 
+[[clone-a-volume]]
 === 克隆卷
 
 NetApp Trident在使用时支持克隆卷 `ontap-nas`， `ontap-san` ， `solidfire-san` ， 和 `gcp-cvs`存储驱动程序。使用时 `ontap-nas-flexgroup`或者 `ontap-nas-economy`驱动程序不支持克隆。从现有卷创建新卷将创建一个新的快照。
@@ -81,6 +86,7 @@ WARNING: 避免克隆与不同存储类关联的PVC。在同一个 StorageClass 
 
 
 
+[[limit-the-maximum-size-of-volumes-created-by-trident]]
 === 限制Trident创建的最大体积。
 
 要配置Trident可创建的卷的最大大小，请使用以下方法： `limitVolumeSize`参数 `backend.json`定义。
@@ -89,18 +95,21 @@ WARNING: 避免克隆与不同存储类关联的PVC。在同一个 StorageClass 
 
 
 
+[[limit-the-maximum-size-of-flexvols-created-by-trident]]
 === 限制Trident创建的FlexVols的最大尺寸。
 
 要配置用作 ontap-san-economy 和 ontap-nas-economy 驱动程序池的 FlexVols 的最大大小，请使用以下方法： `limitVolumePoolSize`参数 `backend.json`定义。
 
 
 
+[[configure-trident-to-use-bidirectional-chap]]
 === 配置Trident使用双向 CHAP
 
 您可以在后端定义中指定 CHAP 发起方和目标用户名和密码，并让Trident在 SVM 上启用 CHAP。使用 `useCHAP`在后端配置中设置参数， Trident使用 CHAP 对ONTAP后端的 iSCSI 连接进行身份验证。
 
 
 
+[[create-and-use-an-svm-qos-policy]]
 === 创建并使用 SVM QoS 策略
 
 利用应用于 SVM 的ONTAP QoS 策略，可以限制Trident已配置卷可消耗的 IOPS 数量。这有助于 http://docs.netapp.com/ontap-9/topic/com.netapp.doc.pow-perf-mon/GUID-77DF9BAF-4ED7-43F6-AECE-95DFB0680D2F.html?cp=7_1_2_1_2["阻止欺凌行为"^]或者失控的容器影响Trident SVM 之外的工作负载。
@@ -131,6 +140,7 @@ IMPORTANT: 只有当您的ONTAP版本低于 9.8 时，才应将 QoS 策略组分
 
 
 
+[[create-qos-policy-groups-for-trident]]
 === 为Trident创建 QoS 策略组
 
 服务质量 (QoS) 保证关键工作负载的性能不会因竞争工作负载而降低。 ONTAP QoS 策略组为卷提供 QoS 选项，并允许用户为一个或多个工作负载定义吞吐量上限。有关 QoS 的更多信息，请参阅 https://docs.netapp.com/ontap-9/topic/com.netapp.doc.pow-perf-mon/GUID-77DF9BAF-4ED7-43F6-AECE-95DFB0680D2F.html["通过服务质量 (QoS) 保证吞吐量。"^]。您可以在后端或存储池中指定 QoS 策略组，这些策略组将应用于在该池或后端中创建的每个卷。
@@ -172,6 +182,7 @@ storage:
 
 
 
+[[limit-storage-resource-access-to-kubernetes-cluster-members]]
 === 限制对 Kubernetes 集群成员的存储资源访问
 
 限制对Trident创建的 NFS 卷、iSCSI LUN 和 FC LUN 的访问是 Kubernetes 部署安全态势的关键组成部分。这样做可以防止不属于 Kubernetes 集群的主机访问卷并可能意外修改数据。
@@ -188,6 +199,7 @@ storage:
 
 
 
+[[use-a-dedicated-export-policy]]
 === 使用专门的出口政策
 
 您应该确保每个后端都存在导出策略，该策略仅允许访问 Kubernetes 集群中的节点。Trident可以自动创建和管理出口政策。这样， Trident将其提供的卷的访问限制到 Kubernetes 集群中的节点，并简化了节点的添加/删除。
@@ -202,6 +214,7 @@ storage:
 
 
 
+[[disable-showmount-for-the-application-svm]]
 === 禁用 `showmount`对于应用SVM
 
 这 `showmount`此功能使 NFS 客户端能够向 SVM 查询可用 NFS 导出列表。部署到 Kubernetes 集群的 pod 可以发出 `showmount -e`对目标执行命令，并接收可用挂载点列表，包括它无法访问的挂载点。虽然这本身并不构成安全隐患，但它确实提供了不必要的信息，可能会帮助未经授权的用户连接到 NFS 导出。
@@ -214,18 +227,21 @@ vserver nfs modify -vserver <svm_name> -showmount disabled
 ----
 
 
+[[solidfire-best-practices]]
 == SolidFire最佳实践
 
 了解配置Trident的SolidFire存储的最佳实践。
 
 
 
+[[create-solidfire-account]]
 === 创建 Solidfire 帐户
 
 每个SolidFire帐户代表一个唯一的卷所有者，并接收自己的一组质询握手身份验证协议 (CHAP) 凭证。您可以通过使用帐户名称和相应的 CHAP 凭据或通过卷访问组来访问分配给帐户的卷。一个账户最多可以分配两千卷，但一卷只能属于一个账户。
 
 
 
+[[create-a-qos-policy]]
 === 创建 QoS 策略
 
 如果您想要创建并保存可应用于多个卷的标准化服务质量设置，请使用SolidFire服务质量 (QoS) 策略。
@@ -278,6 +294,7 @@ NOTE: 尽管最大 IOPS 和突发 IOPS 可以设置为高达 200,000，但卷的
 
 
 
+[[solidfire-authentication]]
 === SolidFire身份验证
 
 Element 支持两种身份验证方法：CHAP 和卷访问组 (VAG)。 CHAP 使用 CHAP 协议对主机进行后端身份验证。卷访问组控制对其所配置卷的访问。  NetApp建议使用 CHAP 进行身份验证，因为它更简单且没有扩展限制。
@@ -291,6 +308,7 @@ CHAP 身份验证（验证发起者是否为预期的卷用户）仅在基于帐
 
 
 
+[[where-to-find-more-information]]
 == 哪里可以找到更多信息？
 
 下面列出了一些最佳实践文档。搜索 https://www.netapp.com/search/["NetApp库"^]适用于最新版本。

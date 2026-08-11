@@ -21,6 +21,7 @@ NOTE: 您可以配置Trident Protect 在数据保护操作期间冻结和解冻�
 
 
 
+[[create-an-on-demand-snapshot]]
 == 创建按需快照
 
 您可以随时创建按需快照。
@@ -85,6 +86,7 @@ tridentctl-protect create snapshot <my_snapshot_name> --appvault <my_appvault_na
 ====
 
 
+[[create-an-on-demand-backup]]
 == 创建按需备份
 
 您可以随时备份应用程序。
@@ -172,6 +174,7 @@ tridentctl-protect create backup <my_backup_name> --appvault <my-vault-name> --a
 ====
 
 
+[[create-a-data-protection-schedule]]
 == 制定数据保护计划
 
 保护策略通过按照定义的计划创建快照、备份或两者来保护应用程序。您可以选择每小时、每天、每周和每月创建快照和备份，并可以指定要保留的副本数量。您可以使用 full-backup-rule 注释来安排非增量式完整备份。默认情况下，所有备份都是增量的。定期执行完整备份以及其间的增量备份有助于降低与恢复相关的风险。
@@ -297,6 +300,7 @@ tridentctl-protect create schedule <my_schedule_name> --appvault <my_appvault_na
 ====
 
 
+[[delete-a-snapshot]]
 == 删除快照
 
 删除不再需要的已安排或按需快照。
@@ -312,6 +316,7 @@ kubectl delete snapshot <snapshot_name> -n my-app-namespace
 
 
 
+[[delete-a-backup]]
 == 删除备份
 
 删除不再需要的计划备份或按需备份。
@@ -330,6 +335,7 @@ kubectl delete backup <backup_name> -n my-app-namespace
 
 
 
+[[check-the-status-of-a-backup-operation]]
 == 检查备份操作的状态
 
 您可以使用命令行来检查正在进行、已完成或已失败的备份操作的状态。
@@ -345,6 +351,7 @@ kubectl get backup -n <namespace_name> <my_backup_cr_name> -o jsonpath='{.status
 
 
 
+[[enable-backup-and-restore-for-azure-netapp-files-anf-operations]]
 == 启用 Azure NetApp 文件 (ANF) 操作的备份和还原
 
 如果您已安装Trident Protect，则可以为使用 azure-netapp-files 存储类且在Trident 24.06 之前创建的存储后端启用节省空间的备份和还原功能。此功能适用于 NFSv4 卷，并且不会占用容量池中的额外空间。

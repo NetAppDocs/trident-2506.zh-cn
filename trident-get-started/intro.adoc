@@ -16,6 +16,7 @@ Trident是由NetApp维护的完全支持的开源项目。它旨在帮助您使�
 
 
 
+[[what-is-trident]]
 == 什么是Trident？
 
 NetApp Trident支持在所有流行的NetApp存储平台（包括公有云和本地）上使用和管理存储资源，例如本地ONTAP集群（AFF、 FAS和ASA）、 ONTAP Select、 Cloud Volumes ONTAP、Element 软件（NetApp HCI、 SolidFire）、 Azure NetApp Files、 Amazon FSx for NetApp ONTAP和 Google Cloud 上的Cloud Volumes Service 。
@@ -29,6 +30,7 @@ NOTE: 如果您是第一次使用 Kubernetes，您应该先熟悉一下它。lin
 
 
 
+[[kubernetes-integration-with-netapp-products]]
 == Kubernetes 与NetApp产品集成
 
 NetApp的存储产品组合与 Kubernetes 集群的许多方面集成，提供高级数据管理功能，从而增强 Kubernetes 部署的功能、能力、性能和可用性。

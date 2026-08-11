@@ -16,6 +16,7 @@ summary: 您可以使用Trident安装程序来自定义部署。
 
 
 
+[[learn-about-the-installer]]
 == 了解安装程序
 
 Trident安装程序允许您自定义属性。例如，如果您已将Trident镜像复制到私有仓库，则可以使用以下方式指定镜像名称： `--trident-image` 。如果您已将Trident镜像以及所需的 CSI sidecar 镜像复制到私有存储库，则最好使用以下方式指定该存储库的位置： `--image-registry`开关，其形式 `<registry FQDN>[:port]`。
